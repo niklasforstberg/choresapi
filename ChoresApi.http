@@ -1,0 +1,6 @@
+@ChoresApi_HostAddress = http://localhost:5032
+
+GET {{ChoresApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
