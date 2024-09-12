@@ -9,7 +9,7 @@ namespace ChoresApp.Helpers
         public ChoresAppDbContext(DbContextOptions<ChoresAppDbContext> options) : base(options) { }
 
         public DbSet<Chore> Chores { get; set; }
-        public DbSet<Task> Tasks { get; set; }
+        public DbSet<ChoreLog> ChoresLog { get; set; }
         public DbSet<User> Users { get; set; }
     }
 }
