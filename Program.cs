@@ -16,16 +16,24 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseSwagger();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    
+    app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "The family chores API");
+            c.InjectStylesheet("/swagger/custom.css");
+            c.RoutePrefix = String.Empty;
+        });
 }
 
 app.UseHttpsRedirection();
 
 // Add user endpoints
 app.MapUserEndpoints();
+app.MapFamilyEndpoints();
 
 app.Run();

@@ -63,6 +63,20 @@ namespace ChoresApi.Migrations
                     b.ToTable("ChoresLog");
                 });
 
+            modelBuilder.Entity("ChoresApp.Models.Family", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Families");
+                });
+
             modelBuilder.Entity("ChoresApp.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -80,6 +94,9 @@ namespace ChoresApi.Migrations
 
                     b.Property<string>("Email")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("FamilyId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("FirstName")
                         .HasColumnType("TEXT");
@@ -107,6 +124,8 @@ namespace ChoresApi.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("FamilyId");
+
                     b.ToTable("Users");
                 });
 
@@ -127,6 +146,20 @@ namespace ChoresApi.Migrations
                     b.Navigation("Chore");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ChoresApp.Models.User", b =>
+                {
+                    b.HasOne("ChoresApp.Models.Family", "Family")
+                        .WithMany("Users")
+                        .HasForeignKey("FamilyId");
+
+                    b.Navigation("Family");
+                });
+
+            modelBuilder.Entity("ChoresApp.Models.Family", b =>
+                {
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

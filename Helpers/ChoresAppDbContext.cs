@@ -11,5 +11,7 @@ namespace ChoresApp.Helpers
         public DbSet<Chore> Chores { get; set; }
         public DbSet<ChoreLog> ChoresLog { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Family> Families { get; set; }
+
     }
 }
