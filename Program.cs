@@ -5,16 +5,45 @@ using Microsoft.EntityFrameworkCore;
 using ChoresApp.Helpers;
 using ChoresApp.Endpoints;
 using ChoresApi.Endpoints;
-
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
 builder.Services.AddDbContext<ChoresAppDbContext>(options =>
         options.UseSqlite(configuration.GetConnectionString("SqliteConnection")));
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ChoresApp API", Version = "v1" });
+    
+    // Add JWT Authentication
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 //JWT
 builder.Services.AddAuthentication(options =>
@@ -75,7 +104,7 @@ app.UseAuthorization();
 
 app.UseHttpsRedirection();
 
-var tokenkey = builder.Configuration["AppSettings:TokenKey"];
+var tokenkey = builder.Configuration["Jwt:Key"];
 
 SecurityEndpoints.ConfigureEndpoints(app, tokenkey);
 

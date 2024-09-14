@@ -21,7 +21,7 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to add user: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Read (Get all)
             app.MapGet("/api/user/getall", async (ChoresAppDbContext db) =>
@@ -34,7 +34,7 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve users: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Read (Get by id)
             app.MapGet("/api/user/{id}", async (ChoresAppDbContext db, int id) =>
@@ -48,7 +48,7 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve user: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Update
             app.MapPut("/api/user/{id}", async (ChoresAppDbContext db, int id, ChoreUser updatedUser) =>
@@ -79,7 +79,7 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to update user: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Delete
             app.MapDelete("/users/{id}", async (ChoresAppDbContext db, int id) =>
@@ -97,7 +97,7 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to delete user: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
         }
     }
 }

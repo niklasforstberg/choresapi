@@ -23,7 +23,7 @@ public static class SecurityEndpoints
         app.MapPost("/api/security/login",
         [AllowAnonymous] async (ChoresAppDbContext dbcontext, UserDto userdto) =>
         {
-            var choresappUser = await dbcontext.Set<ChoreUser>().SingleOrDefaultAsync(user => user.Email == userdto.Email);
+            var choresappUser = await dbcontext.Set<ChoreUser>().FirstOrDefaultAsync(user => user.Email == userdto.Email);
 
             if (choresappUser is null)
             {

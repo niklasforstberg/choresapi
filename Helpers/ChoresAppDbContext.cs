@@ -13,5 +13,13 @@ namespace ChoresApp.Helpers
         public DbSet<ChoreUser> ChoreUsers { get; set; }
         public DbSet<Family> Families { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<ChoreUser>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+        }
     }
 }
