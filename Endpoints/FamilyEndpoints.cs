@@ -93,7 +93,7 @@ namespace ChoresApp.Endpoints
             {
                 try
                 {
-                    var users = await db.Users
+                    var users = await db.ChoreUsers
                         .Where(u => u.FamilyId == id)
                         .ToListAsync();
 

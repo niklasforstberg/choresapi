@@ -11,6 +11,6 @@ namespace ChoresApp.Models
         public int ChoreId { get; set; }
         public int UserId { get; set; }
         public virtual Chore? Chore { get; set; }
-        public virtual User? User { get; set; }
+        public virtual ChoreUser? ChoreUser { get; set; }
     }
 }

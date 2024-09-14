@@ -8,7 +8,7 @@ namespace ChoresApp.Models
         [Key]
         public int Id { get; set; }
         public string? Name { get; set; }
-        public virtual ICollection<User>? Users { get; set; } = new List<User>();
+        public virtual ICollection<ChoreUser>? ChoreUsers { get; set; } = new List<ChoreUser>();
         public Family() { }
     }
 }

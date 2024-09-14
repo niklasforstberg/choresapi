@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ChoresApi.Migrations
 {
     [DbContext(typeof(ChoresAppDbContext))]
-    [Migration("20240913152116_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20240914102133_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,14 +27,17 @@ namespace ChoresApi.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("FamilyId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FamilyId");
 
                     b.ToTable("Chores");
                 });
@@ -46,6 +49,9 @@ namespace ChoresApi.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ChoreId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ChoreUserId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DueDate")
@@ -61,26 +67,12 @@ namespace ChoresApi.Migrations
 
                     b.HasIndex("ChoreId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ChoreUserId");
 
                     b.ToTable("ChoresLog");
                 });
 
-            modelBuilder.Entity("ChoresApp.Models.Family", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Families");
-                });
-
-            modelBuilder.Entity("ChoresApp.Models.User", b =>
+            modelBuilder.Entity("ChoresApp.Models.ChoreUser", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,6 +102,9 @@ namespace ChoresApi.Migrations
                     b.Property<string>("Password")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("TEXT");
 
@@ -129,7 +124,30 @@ namespace ChoresApi.Migrations
 
                     b.HasIndex("FamilyId");
 
-                    b.ToTable("Users");
+                    b.ToTable("ChoreUsers");
+                });
+
+            modelBuilder.Entity("ChoresApp.Models.Family", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Families");
+                });
+
+            modelBuilder.Entity("ChoresApp.Models.Chore", b =>
+                {
+                    b.HasOne("ChoresApp.Models.Family", "Family")
+                        .WithMany()
+                        .HasForeignKey("FamilyId");
+
+                    b.Navigation("Family");
                 });
 
             modelBuilder.Entity("ChoresApp.Models.ChoreLog", b =>
@@ -140,21 +158,19 @@ namespace ChoresApi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ChoresApp.Models.User", "User")
+                    b.HasOne("ChoresApp.Models.ChoreUser", "ChoreUser")
                         .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ChoreUserId");
 
                     b.Navigation("Chore");
 
-                    b.Navigation("User");
+                    b.Navigation("ChoreUser");
                 });
 
-            modelBuilder.Entity("ChoresApp.Models.User", b =>
+            modelBuilder.Entity("ChoresApp.Models.ChoreUser", b =>
                 {
                     b.HasOne("ChoresApp.Models.Family", "Family")
-                        .WithMany("Users")
+                        .WithMany("ChoreUsers")
                         .HasForeignKey("FamilyId");
 
                     b.Navigation("Family");
@@ -162,7 +178,7 @@ namespace ChoresApi.Migrations
 
             modelBuilder.Entity("ChoresApp.Models.Family", b =>
                 {
-                    b.Navigation("Users");
+                    b.Navigation("ChoreUsers");
                 });
 #pragma warning restore 612, 618
         }

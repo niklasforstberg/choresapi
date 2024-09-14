@@ -6,25 +6,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ChoresApi.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "Chores",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Chores", x => x.Id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "Families",
                 columns: table => new
@@ -39,13 +25,34 @@ namespace ChoresApi.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Users",
+                name: "Chores",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    FamilyId = table.Column<int>(type: "INTEGER", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Chores", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Chores_Families_FamilyId",
+                        column: x => x.FamilyId,
+                        principalTable: "Families",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ChoreUsers",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Username = table.Column<string>(type: "TEXT", nullable: true),
                     Password = table.Column<string>(type: "TEXT", nullable: true),
+                    PasswordHash = table.Column<string>(type: "TEXT", nullable: true),
                     Email = table.Column<string>(type: "TEXT", nullable: true),
                     Role = table.Column<string>(type: "TEXT", nullable: true),
                     FirstName = table.Column<string>(type: "TEXT", nullable: true),
@@ -60,9 +67,9 @@ namespace ChoresApi.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Users", x => x.Id);
+                    table.PrimaryKey("PK_ChoreUsers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Users_Families_FamilyId",
+                        name: "FK_ChoreUsers_Families_FamilyId",
                         column: x => x.FamilyId,
                         principalTable: "Families",
                         principalColumn: "Id");
@@ -77,24 +84,29 @@ namespace ChoresApi.Migrations
                     IsCompleted = table.Column<bool>(type: "INTEGER", nullable: false),
                     DueDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ChoreId = table.Column<int>(type: "INTEGER", nullable: false),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false)
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ChoreUserId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ChoresLog", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ChoresLog_ChoreUsers_ChoreUserId",
+                        column: x => x.ChoreUserId,
+                        principalTable: "ChoreUsers",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ChoresLog_Chores_ChoreId",
                         column: x => x.ChoreId,
                         principalTable: "Chores",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ChoresLog_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Chores_FamilyId",
+                table: "Chores",
+                column: "FamilyId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ChoresLog_ChoreId",
@@ -102,13 +114,13 @@ namespace ChoresApi.Migrations
                 column: "ChoreId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChoresLog_UserId",
+                name: "IX_ChoresLog_ChoreUserId",
                 table: "ChoresLog",
-                column: "UserId");
+                column: "ChoreUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_FamilyId",
-                table: "Users",
+                name: "IX_ChoreUsers_FamilyId",
+                table: "ChoreUsers",
                 column: "FamilyId");
         }
 
@@ -119,10 +131,10 @@ namespace ChoresApi.Migrations
                 name: "ChoresLog");
 
             migrationBuilder.DropTable(
-                name: "Chores");
+                name: "ChoreUsers");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "Chores");
 
             migrationBuilder.DropTable(
                 name: "Families");

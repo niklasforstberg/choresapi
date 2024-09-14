@@ -9,13 +9,13 @@ namespace ChoresApp.Endpoints
         public static void MapUserEndpoints(this WebApplication app)
         {
             // Create
-            app.MapPost("/api/user/add", async (ChoresAppDbContext db, User user) =>
+            app.MapPost("/api/user/add", async (ChoresAppDbContext db, ChoreUser choreUser) =>
             {
                 try
                 {
-                    db.Users.Add(user);
+                    db.ChoreUsers.Add(choreUser);
                     await db.SaveChangesAsync();
-                    return Results.Created($"/users/{user.Id}", user);
+                    return Results.Created($"/users/{choreUser.Id}", choreUser);
                 }
                 catch (Exception ex)
                 {
@@ -28,7 +28,7 @@ namespace ChoresApp.Endpoints
             {
                 try
                 {
-                    return Results.Ok(await db.Users.ToListAsync());
+                    return Results.Ok(await db.ChoreUsers.ToListAsync());
                 }
                 catch (Exception ex)
                 {
@@ -41,7 +41,7 @@ namespace ChoresApp.Endpoints
             {
                 try
                 {
-                    var user = await db.Users.FindAsync(id);
+                    var user = await db.ChoreUsers.FindAsync(id);
                     return user != null ? Results.Ok(user) : Results.NotFound();
                 }
                 catch (Exception ex)
@@ -51,11 +51,11 @@ namespace ChoresApp.Endpoints
             });
 
             // Update
-            app.MapPut("/api/user/{id}", async (ChoresAppDbContext db, int id, User updatedUser) =>
+            app.MapPut("/api/user/{id}", async (ChoresAppDbContext db, int id, ChoreUser updatedUser) =>
             {
                 try
                 {
-                    var user = await db.Users.FindAsync(id);
+                    var user = await db.ChoreUsers.FindAsync(id);
                     if (user == null) return Results.NotFound();
 
                     user.Username = updatedUser.Username;
@@ -70,6 +70,7 @@ namespace ChoresApp.Endpoints
                     user.State = updatedUser.State;
                     user.ZipCode = updatedUser.ZipCode;
                     user.Country = updatedUser.Country;
+                    user.FamilyId = updatedUser.FamilyId;
 
                     await db.SaveChangesAsync();
                     return Results.NoContent();
@@ -85,10 +86,10 @@ namespace ChoresApp.Endpoints
             {
                 try
                 {
-                    var user = await db.Users.FindAsync(id);
+                    var user = await db.ChoreUsers.FindAsync(id);
                     if (user == null) return Results.NotFound();
 
-                    db.Users.Remove(user);
+                    db.ChoreUsers.Remove(user);
                     await db.SaveChangesAsync();
                     return Results.Ok();
                 }
