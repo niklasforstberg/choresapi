@@ -1,4 +1,3 @@
-
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
@@ -17,7 +16,7 @@ namespace ChoresApi.Endpoints;
 
 public static class SecurityEndpoints
 {
-    public static void ConfigureEndpoints(this WebApplication app, string tokenKey)
+    public static void ConfigureEndpoints(this WebApplication app, IConfiguration configuration)
     {
 
         app.MapPost("/api/security/login",
@@ -66,9 +65,11 @@ public static class SecurityEndpoints
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, "Admin"),
                 new Claim(ClaimTypes.Role, "User"),
+                new Claim(JwtRegisteredClaimNames.Aud, configuration["Jwt:Audience"] ?? "localhost"),
+                new Claim(JwtRegisteredClaimNames.Iss, configuration["Jwt:Issuer"] ?? "localhost")
             };
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                tokenKey!));
+                configuration["Jwt:Key"]!));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 

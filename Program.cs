@@ -6,6 +6,8 @@ using ChoresApp.Helpers;
 using ChoresApp.Endpoints;
 using ChoresApi.Endpoints;
 using Microsoft.OpenApi.Models;
+using System.Text.Json;
+
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -46,25 +48,36 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 //JWT
-builder.Services.AddAuthentication(options =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(o =>
-{
-    o.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey
-        (Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = false,
-        ValidateIssuerSigningKey = true
-    };
-});
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+
+        // Add this section for detailed error messages
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                
+                // Only use this for debugging. Remove in production!
+                var result = JsonSerializer.Serialize("401 Error: " + context.Error + " - " + context.ErrorDescription);
+                return context.Response.WriteAsync(result);
+            }
+        };
+    });
+
 
 builder.Services.AddCors(options =>
 {
@@ -104,9 +117,7 @@ app.UseAuthorization();
 
 app.UseHttpsRedirection();
 
-var tokenkey = builder.Configuration["Jwt:Key"];
-
-SecurityEndpoints.ConfigureEndpoints(app, tokenkey);
+SecurityEndpoints.ConfigureEndpoints(app, configuration);
 
 // Add user endpoints
 app.MapUserEndpoints();
