@@ -100,17 +100,13 @@ app.UseCors(x => x.AllowAnyHeader()
       .WithOrigins("http://localhost:3000")
       .AllowCredentials());
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    
+
     app.UseSwaggerUI(c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "The family chores API");
             c.InjectStylesheet("/swagger/custom.css");
             c.RoutePrefix = String.Empty;
         });
-}
 
 app.UseAuthentication();
 app.UseAuthorization();
