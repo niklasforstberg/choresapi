@@ -12,6 +12,7 @@ namespace ChoresApp.Helpers
         public DbSet<ChoreLog> ChoresLog { get; set; }
         public DbSet<ChoreUser> ChoreUsers { get; set; }
         public DbSet<Family> Families { get; set; }
+        public DbSet<Invitation> Invitations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

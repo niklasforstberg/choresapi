@@ -83,7 +83,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("http://localhost:3000")
+        builder.WithOrigins("http://localhost:5173")
                .AllowAnyHeader()
                .AllowAnyMethod();
     });
@@ -95,18 +95,14 @@ var app = builder.Build();
 
 app.UseSwagger();
 
-app.UseCors(x => x.AllowAnyHeader()
-      .AllowAnyMethod()
-      .WithOrigins("http://localhost:3000")
-      .AllowCredentials());
+app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "The family chores API");
+        c.InjectStylesheet("/swagger/custom.css");
+        c.RoutePrefix = String.Empty;
+    });
 
-
-    app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "The family chores API");
-            c.InjectStylesheet("/swagger/custom.css");
-            c.RoutePrefix = String.Empty;
-        });
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -118,5 +114,6 @@ SecurityEndpoints.ConfigureEndpoints(app, configuration);
 // Add user endpoints
 app.MapUserEndpoints();
 app.MapFamilyEndpoints();
+app.MapInvitationEndpoints();
 
 app.Run();
