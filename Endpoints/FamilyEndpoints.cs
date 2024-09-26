@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ChoresApp.Models;
 using ChoresApp.Helpers;
+using ChoresApi.Models.DTOs;
 
 namespace ChoresApp.Endpoints
 {
@@ -9,19 +10,27 @@ namespace ChoresApp.Endpoints
         public static void MapFamilyEndpoints(this WebApplication app)
         {
             // Create
-            app.MapPost("/api/family/add", async (ChoresAppDbContext db, Family family) =>
+            app.MapPost("/api/family/add", async (ChoresAppDbContext db, FamilyDto familyDto) =>
             {
                 try
                 {
+                    var family = new Family
+                    {
+                        Name = familyDto.Name,
+                        CreatedBy = familyDto.CreatedBy,
+                        CreatedAt = DateTime.Now
+                    };
+
                     db.Families.Add(family);
                     await db.SaveChangesAsync();
-                    return Results.Created($"/api/family/{family.Id}", family);
+                    familyDto.Id = family.Id;
+                    return Results.Created($"/api/family/{family.Id}", familyDto);
                 }
                 catch (Exception ex)
                 {
                     return Results.BadRequest($"Failed to add family: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Read (Get all)
             app.MapGet("/api/family/getall", async (ChoresAppDbContext db) =>

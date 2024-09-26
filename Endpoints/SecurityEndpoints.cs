@@ -35,7 +35,7 @@ public static class SecurityEndpoints
                 return Results.Unauthorized();
             }
 
-            string token = CreateToken(userdto);
+            string token = CreateToken(choresappUser);
 
             return Results.Ok(token);
 
@@ -59,14 +59,13 @@ public static class SecurityEndpoints
             return Results.Ok("User " + userdto.Username + " has been registered");
         });
 
-        string CreateToken(UserDto user)
+        string CreateToken(ChoreUser user)
         {
             List<Claim> claims = new List<Claim> {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, "Admin"),
+                new Claim(ClaimTypes.GivenName, user.FirstName!),
+                new Claim(ClaimTypes.Surname, user.LastName!), 
                 new Claim(ClaimTypes.Role, "User"),
-                new Claim(JwtRegisteredClaimNames.Aud, configuration["Jwt:Audience"] ?? "localhost"),
-                new Claim(JwtRegisteredClaimNames.Iss, configuration["Jwt:Issuer"] ?? "localhost")
+                new Claim(ClaimTypes.Sid, user.Id.ToString())
             };
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                 configuration["Jwt:Key"]!));
