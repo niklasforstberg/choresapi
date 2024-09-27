@@ -61,12 +61,14 @@ public static class SecurityEndpoints
 
         string CreateToken(ChoreUser user)
         {
-            List<Claim> claims = new List<Claim> {
-                new Claim(ClaimTypes.GivenName, user.FirstName!),
-                new Claim(ClaimTypes.Surname, user.LastName!), 
-                new Claim(ClaimTypes.Role, "User"),
-                new Claim(ClaimTypes.Sid, user.Id.ToString())
+            var claims = new List<Claim>
+            {
+                new Claim("id", user.Id.ToString() ?? ""),
+                new Claim("firstName", user.FirstName ?? ""),
+                new Claim("lastName", user.LastName ?? ""),
+                new Claim("role", "User")
             };
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                 configuration["Jwt:Key"]!));
 
