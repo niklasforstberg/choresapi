@@ -58,7 +58,6 @@ namespace ChoresApp.Endpoints
                     var user = await db.ChoreUsers.FindAsync(id);
                     if (user == null) return Results.NotFound();
 
-                    user.Username = updatedUser.Username;
                     user.Password = updatedUser.Password;
                     user.Email = updatedUser.Email;
                     user.Role = updatedUser.Role;

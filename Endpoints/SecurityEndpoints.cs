@@ -44,19 +44,46 @@ public static class SecurityEndpoints
 
         app.MapPost("/api/security/register", [AllowAnonymous] async (ChoresAppDbContext dbcontext, UserDto userdto) =>
         {
+            // Check if user already exists
+            var existingUser = await dbcontext.Set<ChoreUser>().FirstOrDefaultAsync(u => u.Email == userdto.Email);
+            if (existingUser != null)
+            {
+                return Results.Conflict(new { message = $"User with email {userdto.Email} already exists" });
+            }
+
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(userdto.Password);
 
             ChoreUser choresappUser = new ChoreUser
             {
-                Username = userdto.Username,
                 Email = userdto.Email,
-                PasswordHash = passwordHash
+                PasswordHash = passwordHash,
+                FirstName = userdto.FirstName,
+                LastName = userdto.LastName,
+                Role = userdto.Role,
+                FamilyId = userdto.FamilyId,
+                PhoneNumber = userdto.PhoneNumber,
+                Address = userdto.Address,
+                City = userdto.City,
+                State = userdto.State,
+                ZipCode = userdto.ZipCode,
+                Country = userdto.Country
             };
 
             dbcontext.Add<ChoreUser>(choresappUser);
-            await dbcontext.SaveChangesAsync();
+            
+            try
+            {
+                await dbcontext.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // In case of a race condition where the email was added between our check and save
+                return Results.Conflict(new { message = $"User with email {userdto.Email} already exists" });
+            }
 
-            return Results.Ok("User " + userdto.Username + " has been registered");
+            string token = CreateToken(choresappUser);
+
+            return Results.Ok(token);
         });
 
         string CreateToken(ChoreUser user)
