@@ -93,7 +93,8 @@ public static class SecurityEndpoints
                 new Claim("id", user.Id.ToString() ?? ""),
                 new Claim("firstName", user.FirstName ?? ""),
                 new Claim("lastName", user.LastName ?? ""),
-                new Claim("role", "User")
+                new Claim("role", "User"),
+                new Claim("email", user.Email?.ToString() ?? "")
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
