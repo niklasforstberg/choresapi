@@ -48,6 +48,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 //JWT
+Console.WriteLine(builder.Configuration["Jwt:Audience"]);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

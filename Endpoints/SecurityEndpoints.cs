@@ -103,6 +103,8 @@ public static class SecurityEndpoints
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
             var token = new JwtSecurityToken(
+                    issuer: configuration["Jwt:Issuer"],
+                    audience: configuration["Jwt:Audience"],
                     claims: claims,
                     expires: DateTime.Now.AddDays(1),
                     signingCredentials: creds
