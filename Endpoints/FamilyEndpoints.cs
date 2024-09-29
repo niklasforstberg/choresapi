@@ -24,6 +24,7 @@ namespace ChoresApp.Endpoints
                     db.Families.Add(family);
                     await db.SaveChangesAsync();
                     familyDto.Id = family.Id;
+                    familyDto.CreatedAt = family.CreatedAt;
                     return Results.Created($"/api/family/{family.Id}", familyDto);
                 }
                 catch (Exception ex)

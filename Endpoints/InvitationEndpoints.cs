@@ -19,21 +19,38 @@ namespace ChoresApp.Endpoints
         public static void MapInvitationEndpoints(this WebApplication app)
         {
             // Create Invitation
-            app.MapPost("/api/invitation/create", async (ChoresAppDbContext db, Invitation invitation) =>
+            app.MapPost("/api/invitation/create", async (ChoresAppDbContext db, InvitationDto invitationDto) =>
             {
                 try
                 {
-                    invitation.Status = "pending";
-                    invitation.Token = Guid.NewGuid().ToString(); // Generate a unique token
-                    invitation.CreatedAt = DateTime.UtcNow;
-                    invitation.ExpiresAt = DateTime.UtcNow.AddDays(7); // Set expiration to 7 days from now
+                    var invitation = new Invitation
+                    {
+                        FamilyId = invitationDto.FamilyId,
+                        Inviter = new ChoreUser { Id = invitationDto.InviterId }, // Create a ChoreUser object
+                        Family = new Family { Id = invitationDto.FamilyId },
+                        InviterId = invitationDto.InviterId!,
+                        InviteeEmail = invitationDto.InviteeEmail!,
+                        Status = "pending",
+                        Token = Guid.NewGuid().ToString(), // Generate a unique token
+                        CreatedAt = DateTime.UtcNow,
+                        ExpiresAt = DateTime.UtcNow.AddDays(7) // Set expiration to 7 days from now
+                    };
 
                     db.Invitations.Add(invitation);
                     await db.SaveChangesAsync();
 
                     // TODO: Send invitation email
 
-                    return Results.Created($"/api/invitation/{invitation.Id}", invitation);
+                    return Results.Created($"/api/invitation/{invitation.Id}", new InvitationDto
+                    {
+                        Id = invitation.Id,
+                        FamilyId = invitation.FamilyId,
+                        InviterId = invitation.InviterId,
+                        InviteeEmail = invitation.InviteeEmail,
+                        Status = invitation.Status,
+                        CreatedAt = invitation.CreatedAt,
+                        ExpiresAt = invitation.ExpiresAt
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -169,6 +186,72 @@ namespace ChoresApp.Endpoints
                 catch (Exception ex)
                 {
                     return Results.BadRequest($"Failed to resend invitation: {ex.Message}");
+                }
+            }).RequireAuthorization();
+
+            // Delete Invitation
+            app.MapDelete("/api/invitation/delete/{id}", async (ChoresAppDbContext db, int id) =>
+            {
+                try
+                {
+                    var invitation = await db.Invitations.FindAsync(id);
+                    if (invitation == null) return Results.NotFound("Invitation not found.");
+
+                    db.Invitations.Remove(invitation);
+                    await db.SaveChangesAsync();
+
+                    return Results.Ok("Invitation deleted successfully.");
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest($"Failed to delete invitation: {ex.Message}");
+                }
+            }).RequireAuthorization();
+
+            // Create Invitations
+            app.MapPost("/api/invitations/create", async (ChoresAppDbContext db, List<InvitationDto> invitationDtos) =>
+            {
+                try
+                {
+                    var createdInvitations = new List<InvitationDto>();
+
+                    foreach (var invitationDto in invitationDtos)
+                    {
+                        var invitation = new Invitation
+                        {
+                            FamilyId = invitationDto.FamilyId,
+                            Inviter = new ChoreUser { Id = invitationDto.InviterId },
+                            Family = new Family { Id = invitationDto.FamilyId },
+                            InviterId = invitationDto.InviterId!,
+                            InviteeEmail = invitationDto.InviteeEmail!,
+                            Status = "pending",
+                            Token = Guid.NewGuid().ToString(),
+                            CreatedAt = DateTime.UtcNow,
+                            ExpiresAt = DateTime.UtcNow.AddDays(7)
+                        };
+
+                        db.Invitations.Add(invitation);
+                        await db.SaveChangesAsync();
+
+                        // TODO: Send invitation email
+
+                        createdInvitations.Add(new InvitationDto
+                        {
+                            Id = invitation.Id,
+                            FamilyId = invitation.FamilyId,
+                            InviterId = invitation.InviterId,
+                            InviteeEmail = invitation.InviteeEmail,
+                            Status = invitation.Status,
+                            CreatedAt = invitation.CreatedAt,
+                            ExpiresAt = invitation.ExpiresAt
+                        });
+                    }
+
+                    return Results.Created($"/api/invitations", createdInvitations);
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest($"Failed to create invitations: {ex.Message}");
                 }
             }).RequireAuthorization();
         }
