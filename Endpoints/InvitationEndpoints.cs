@@ -217,12 +217,21 @@ namespace ChoresApp.Endpoints
 
                     foreach (var invitationDto in invitationDtos)
                     {
+                        // Fetch the Family and ChoreUser (Inviter) from the database
+                        var family = await db.Families.FindAsync(invitationDto.FamilyId);
+                        var inviter = await db.ChoreUsers.FindAsync(invitationDto.InviterId);
+
+                        if (family == null || inviter == null)
+                        {
+                         return Results.BadRequest($"Failed to find family or inviter in the database.");
+                        }
+
                         var invitation = new Invitation
                         {
                             FamilyId = invitationDto.FamilyId,
-                            Inviter = new ChoreUser { Id = invitationDto.InviterId },
-                            Family = new Family { Id = invitationDto.FamilyId },
+                            Family = family,
                             InviterId = invitationDto.InviterId!,
+                            Inviter = inviter,
                             InviteeEmail = invitationDto.InviteeEmail!,
                             Status = "pending",
                             Token = Guid.NewGuid().ToString(),
