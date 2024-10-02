@@ -1,4 +1,4 @@
-namespace ChoresApi.Models.Dtos
+namespace ChoresApi.Models.DTOs
 {
 	public class UserDto
 	{
@@ -8,6 +8,7 @@ namespace ChoresApi.Models.Dtos
         public string? LastName { get; set; }
         public string Role { get; set; } = "User";
         public int? FamilyId { get; set; }
+        public FamilyDto? Family { get; set; }
 
         public string? PhoneNumber { get; set; }
         public string? Address { get; set; }
@@ -15,6 +16,8 @@ namespace ChoresApi.Models.Dtos
         public string? State { get; set; }
         public string? ZipCode { get; set; }
         public string? Country { get; set; }
+
+        
     }
 }
 

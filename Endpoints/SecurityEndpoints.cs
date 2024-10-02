@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Azure.Core;
 using ChoresApp.Models;
 using ChoresApp.Helpers;
-using ChoresApi.Models.Dtos;
+using ChoresApi.Models.DTOs;
 
 namespace ChoresApi.Endpoints;
 
@@ -94,7 +94,9 @@ public static class SecurityEndpoints
                 new Claim("firstName", user.FirstName ?? ""),
                 new Claim("lastName", user.LastName ?? ""),
                 new Claim("role", "User"),
-                new Claim("email", user.Email?.ToString() ?? "")
+                new Claim("email", user.Email?.ToString() ?? ""),
+                new Claim("familyId", user.FamilyId?.ToString() ?? ""),
+                new Claim("familyName", user.Family?.Name ?? "")
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(

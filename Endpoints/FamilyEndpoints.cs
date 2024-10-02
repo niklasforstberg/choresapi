@@ -20,11 +20,21 @@ namespace ChoresApp.Endpoints
                         CreatedBy = familyDto.CreatedBy,
                         CreatedAt = DateTime.Now
                     };
-
+                
                     db.Families.Add(family);
                     await db.SaveChangesAsync();
+
+                    // Find the user by Id and update their FamilyId
+                    var choreUser = await db.ChoreUsers.FindAsync(familyDto.CreatedBy);
+                    if (choreUser != null)
+                    {
+                        choreUser.FamilyId = family.Id;
+                        await db.SaveChangesAsync();
+                    }
+
                     familyDto.Id = family.Id;
                     familyDto.CreatedAt = family.CreatedAt;
+                    Console.WriteLine("Family created: " + familyDto);
                     return Results.Created($"/api/family/{family.Id}", familyDto);
                 }
                 catch (Exception ex)
