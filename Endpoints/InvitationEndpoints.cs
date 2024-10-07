@@ -11,6 +11,7 @@ using Azure.Core;
 using ChoresApp.Models;
 using ChoresApp.Models.DTOs;
 using ChoresApp.Helpers;
+using ChoresApp.Integrations;
 
 namespace ChoresApp.Endpoints
 {
@@ -19,7 +20,7 @@ namespace ChoresApp.Endpoints
         public static void MapInvitationEndpoints(this WebApplication app)
         {
             // Create Invitation
-            app.MapPost("/api/invitation/create", async (ChoresAppDbContext db, InvitationDto invitationDto) =>
+            app.MapPost("/api/invitation/create", async (ChoresAppDbContext db, InvitationDto invitationDto, SmtpEmailSender emailSender) =>
             {
                 try
                 {
@@ -39,7 +40,19 @@ namespace ChoresApp.Endpoints
                     db.Invitations.Add(invitation);
                     await db.SaveChangesAsync();
 
-                    // TODO: Send invitation email
+                    // Send invitation email
+                    await emailSender.SendInvitationEmail(new InvitationDto
+                    {
+                        Id = invitation.Id,
+                        FamilyId = invitation.FamilyId,
+                        InviterId = invitation.InviterId,
+                        InviteeEmail = invitation.InviteeEmail,
+                        Status = invitation.Status,
+                        CreatedAt = invitation.CreatedAt,
+                        ExpiresAt = invitation.ExpiresAt,
+                        FamilyName = invitation.Family.Name,
+                        InviterName = $"{invitation.Inviter.FirstName} {invitation.Inviter.LastName}"
+                    });
 
                     return Results.Created($"/api/invitation/{invitation.Id}", new InvitationDto
                     {
@@ -165,7 +178,7 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Resend Invitation
-            app.MapPost("/api/invitation/{id}/resend", async (ChoresAppDbContext db, int id) =>
+            app.MapPost("/api/invitation/{id}/resend", async (ChoresAppDbContext db, int id, SmtpEmailSender emailSender) =>
             {
                 try
                 {
@@ -179,7 +192,19 @@ namespace ChoresApp.Endpoints
 
                     await db.SaveChangesAsync();
 
-                    // TODO: Send invitation email
+                    // Send invitation email
+                    await emailSender.SendInvitationEmail(new InvitationDto
+                    {
+                        Id = invitation.Id,
+                        FamilyId = invitation.FamilyId,
+                        InviterId = invitation.InviterId,
+                        InviteeEmail = invitation.InviteeEmail,
+                        Status = invitation.Status,
+                        CreatedAt = invitation.CreatedAt,
+                        ExpiresAt = invitation.ExpiresAt,
+                        FamilyName = invitation.Family.Name,
+                        InviterName = $"{invitation.Inviter.FirstName} {invitation.Inviter.LastName}"
+                    });
 
                     return Results.Ok("Invitation resent successfully.");
                 }
@@ -209,7 +234,7 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Create Invitations
-            app.MapPost("/api/invitations/create", async (ChoresAppDbContext db, List<InvitationDto> invitationDtos) =>
+            app.MapPost("/api/invitations/create", async (ChoresAppDbContext db, List<InvitationDto> invitationDtos, SmtpEmailSender emailSender) =>
             {
                 try
                 {
@@ -223,7 +248,7 @@ namespace ChoresApp.Endpoints
 
                         if (family == null || inviter == null)
                         {
-                         return Results.BadRequest($"Failed to find family or inviter in the database.");
+                            return Results.BadRequest($"Failed to find family or inviter in the database.");
                         }
 
                         var invitation = new Invitation
@@ -242,7 +267,21 @@ namespace ChoresApp.Endpoints
                         db.Invitations.Add(invitation);
                         await db.SaveChangesAsync();
 
-                        // TODO: Send invitation email
+                        // Send invitation email
+                        Console.WriteLine("Sending invitation email");
+                        var invitationForEmail = new InvitationDto
+                        {
+                            Id = invitation.Id,
+                            FamilyId = invitation.FamilyId,
+                            InviterId = invitation.InviterId,
+                            InviteeEmail = invitation.InviteeEmail,
+                            Status = invitation.Status,
+                            CreatedAt = invitation.CreatedAt,
+                            ExpiresAt = invitation.ExpiresAt,
+                            FamilyName = family.Name,
+                            InviterName = $"{inviter.FirstName} {inviter.LastName}"
+                        };
+                        await emailSender.SendInvitationEmail(invitationForEmail);
 
                         createdInvitations.Add(new InvitationDto
                         {

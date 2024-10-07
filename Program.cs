@@ -7,9 +7,16 @@ using ChoresApp.Endpoints;
 using ChoresApi.Endpoints;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
-
+using ChoresApp.Integrations;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add this line to use user secrets in development
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddUserSecrets<Program>();
+}
+
 var configuration = builder.Configuration;
 
 builder.Services.AddDbContext<ChoresAppDbContext>(options =>
@@ -91,6 +98,8 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<SmtpEmailSender>();
 
 var app = builder.Build();
 
