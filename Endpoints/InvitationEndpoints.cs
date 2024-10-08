@@ -105,24 +105,45 @@ namespace ChoresApp.Endpoints
             });
 
             // Accept Invitation
-            app.MapPost("/api/invitation/{token}/accept", async (ChoresAppDbContext db, string token, int userId) =>
+            app.MapPost("/api/invitation/{token}/accept", async (ChoresAppDbContext db, string token) =>
             {
                 try
                 {
-                    var invitation = await db.Invitations.FindAsync(token);
-                    if (invitation == null) return Results.NotFound();
+                    Console.WriteLine("Accepting invitation");
+                    var invitation = await db.Invitations
+                        .Include(i => i.Family)
+                        .FirstOrDefaultAsync(i => i.Token == token);
 
+                    if (invitation == null) return Results.NotFound("Invitation not found.");
                     if (invitation.Status != "pending") return Results.BadRequest("Invitation is no longer valid.");
                     if (invitation.ExpiresAt < DateTime.UtcNow) return Results.BadRequest("Invitation has expired.");
 
-                    var user = await db.ChoreUsers.FindAsync(userId);
-                    if (user == null) return Results.NotFound("User not found.");
+                    var user = await db.ChoreUsers.FirstOrDefaultAsync(u => u.Email == invitation.InviteeEmail);
+                    bool userExists = user != null;
 
-                    user.FamilyId = invitation.FamilyId;
+                    if (userExists)
+                    {
+                        // User exists, update their family
+                        user.FamilyId = invitation.FamilyId;
+                    }
+
                     invitation.Status = "accepted";
-
                     await db.SaveChangesAsync();
-                    return Results.Ok("Invitation accepted successfully.");
+
+                    // Return response with family information and user existence status
+                    var responseData = new
+                    {
+                        Message = "Invitation accepted successfully.",
+                        UserExists = userExists,
+                        Family = new
+                        {
+                            FamilyId = invitation.FamilyId,
+                            FamilyName = invitation.Family.Name
+                        },
+                        InviteeEmail = invitation.InviteeEmail
+                    };
+
+                    return Results.Ok(responseData);
                 }
                 catch (Exception ex)
                 {
@@ -267,35 +288,15 @@ namespace ChoresApp.Endpoints
                         db.Invitations.Add(invitation);
                         await db.SaveChangesAsync();
 
+                        invitationDto.Token = invitation.Token;
+                        invitationDto.InviterName = $"{inviter.FirstName} {inviter.LastName}";
+
                         // Send invitation email
                         Console.WriteLine("Sending invitation email");
-                        var invitationForEmail = new InvitationDto
-                        {
-                            Id = invitation.Id,
-                            FamilyId = invitation.FamilyId,
-                            InviterId = invitation.InviterId,
-                            InviteeEmail = invitation.InviteeEmail,
-                            Status = invitation.Status,
-                            CreatedAt = invitation.CreatedAt,
-                            ExpiresAt = invitation.ExpiresAt,
-                            FamilyName = family.Name,
-                            InviterName = $"{inviter.FirstName} {inviter.LastName}"
-                        };
-                        await emailSender.SendInvitationEmail(invitationForEmail);
-
-                        createdInvitations.Add(new InvitationDto
-                        {
-                            Id = invitation.Id,
-                            FamilyId = invitation.FamilyId,
-                            InviterId = invitation.InviterId,
-                            InviteeEmail = invitation.InviteeEmail,
-                            Status = invitation.Status,
-                            CreatedAt = invitation.CreatedAt,
-                            ExpiresAt = invitation.ExpiresAt
-                        });
+                        await emailSender.SendInvitationEmail(invitationDto);
                     }
 
-                    return Results.Created($"/api/invitations", createdInvitations);
+                    return Results.Created($"/api/invitations", invitationDtos);
                 }
                 catch (Exception ex)
                 {
