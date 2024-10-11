@@ -22,7 +22,9 @@ public static class SecurityEndpoints
         app.MapPost("/api/security/login",
         [AllowAnonymous] async (ChoresAppDbContext dbcontext, UserDto userdto) =>
         {
-            var choresappUser = await dbcontext.Set<ChoreUser>().FirstOrDefaultAsync(user => user.Email == userdto.Email);
+            var choresappUser = await dbcontext.Set<ChoreUser>()
+                .Include(u => u.Family)
+                .FirstOrDefaultAsync(user => user.Email == userdto.Email);
 
             if (choresappUser is null)
             {
@@ -37,7 +39,7 @@ public static class SecurityEndpoints
 
             string token = CreateToken(choresappUser);
 
-            return Results.Ok(token);
+            return Results.Ok(new { token = token });
 
         });
 
@@ -83,7 +85,7 @@ public static class SecurityEndpoints
 
             string token = CreateToken(choresappUser);
 
-            return Results.Ok(token);
+            return Results.Ok(new { token = token });
         });
 
         string CreateToken(ChoreUser user)
