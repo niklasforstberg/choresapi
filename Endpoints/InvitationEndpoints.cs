@@ -105,7 +105,7 @@ namespace ChoresApp.Endpoints
             });
 
             // Accept Invitation
-            app.MapPost("/api/invitation/{token}/accept", async (ChoresAppDbContext db, string token) =>
+            app.MapPost("/api/invitation/{token}/accept",  [AllowAnonymous] async (ChoresAppDbContext db, string token) =>
             {
                 try
                 {
@@ -149,10 +149,10 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to accept invitation: {ex.Message}");
                 }
-            }).RequireAuthorization();
+            });
 
             // Reject Invitation
-            app.MapPost("/api/invitation/{token}/reject", async (ChoresAppDbContext db, string token) =>
+            app.MapPost("/api/invitation/{token}/reject",  [AllowAnonymous] async (ChoresAppDbContext db, string token) =>
             {
                 try
                 {
@@ -196,7 +196,7 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve invitations: {ex.Message}");
                 }
-            }).RequireAuthorization();
+            });
 
             // Resend Invitation
             app.MapPost("/api/invitation/{id}/resend", async (ChoresAppDbContext db, int id, SmtpEmailSender emailSender) =>
