@@ -125,5 +125,6 @@ SecurityEndpoints.ConfigureEndpoints(app, configuration);
 app.MapUserEndpoints();
 app.MapFamilyEndpoints();
 app.MapInvitationEndpoints();
+app.MapChoreEndpoints();
 
 app.Run();
