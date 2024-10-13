@@ -25,9 +25,9 @@ namespace ChoresApp.Integrations
 
             var smtpClient = new SmtpClient(_configuration["SmtpServer"])
             {
-                Port = int.Parse(_configuration["SmtpPort"]),
+                Port = int.Parse(_configuration["SmtpPort"] ?? "2525"),
                 Credentials = new NetworkCredential(_configuration["SmtpUsername"], _configuration["SmtpPassword"]),
-                EnableSsl = bool.Parse(_configuration["SmtpEnableSsl"]),
+                EnableSsl = bool.Parse(_configuration["SmtpEnableSsl"] ?? "false"),
             };
 
             _logger.LogDebug("SMTP client configured with host: {SmtpHost}, port: {SmtpPort}, SSL: {EnableSsl}", 

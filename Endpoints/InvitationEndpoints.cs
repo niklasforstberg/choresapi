@@ -121,7 +121,7 @@ namespace ChoresApp.Endpoints
                     var user = await db.ChoreUsers.FirstOrDefaultAsync(u => u.Email == invitation.InviteeEmail);
                     bool userExists = user != null;
 
-                    if (userExists)
+                    if (user != null)
                     {
                         // User exists, update their family
                         user.FamilyId = invitation.FamilyId;

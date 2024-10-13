@@ -7,7 +7,7 @@ namespace ChoresApp.Models.DTOs
         public int Id { get; set; }
         public int FamilyId { get; set; }
         public int InviterId { get; set; }
-        public string InviteeEmail { get; set; }
+        public required string InviteeEmail { get; set; }
         public string? Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ExpiresAt { get; set; }
