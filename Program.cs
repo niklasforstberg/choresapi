@@ -8,6 +8,7 @@ using ChoresApi.Endpoints;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
 using ChoresApp.Integrations;
+using System.Collections.Generic;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,7 +68,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty))
         };
 
         // Add this section for detailed error messages
@@ -126,5 +127,6 @@ app.MapUserEndpoints();
 app.MapFamilyEndpoints();
 app.MapInvitationEndpoints();
 app.MapChoreEndpoints();
+app.MapChoreLogEndpoints();
 
 app.Run();
