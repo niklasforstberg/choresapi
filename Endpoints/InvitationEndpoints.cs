@@ -20,8 +20,21 @@ namespace ChoresApp.Endpoints
         public static void MapInvitationEndpoints(this WebApplication app)
         {
             // Create Invitation
-            app.MapPost("/api/invitation/create", async (ChoresAppDbContext db, InvitationDto invitationDto, SmtpEmailSender emailSender) =>
+            app.MapPost("/api/invitation/create", async (HttpContext httpContext, ChoresAppDbContext db, InvitationDto invitationDto, SmtpEmailSender emailSender) =>
             {
+                var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+                var userFamilyIdClaim = httpContext.User.FindFirst("familyId");
+
+                if (userIdClaim == null || userFamilyIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId) || !int.TryParse(userFamilyIdClaim.Value, out int userFamilyId))
+                {
+                    return Results.Unauthorized();
+                }
+
+                if (invitationDto.FamilyId != userFamilyId || invitationDto.InviterId != userId)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var invitation = new Invitation
@@ -170,8 +183,19 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get Pending Invitations for a Family
-            app.MapGet("/api/family/{familyId}/invitations", async (ChoresAppDbContext db, int familyId) =>
+            app.MapGet("/api/family/{familyId}/invitations", async (HttpContext httpContext, ChoresAppDbContext db, int familyId) =>
             {
+                var userFamilyIdClaim = httpContext.User.FindFirst("familyId");
+                if (userFamilyIdClaim == null || !int.TryParse(userFamilyIdClaim.Value, out int userFamilyId))
+                {
+                    return Results.Unauthorized();
+                }
+
+                if (familyId != userFamilyId)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var invitations = await db.Invitations
@@ -196,15 +220,26 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve invitations: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Resend Invitation
-            app.MapPost("/api/invitation/{id}/resend", async (ChoresAppDbContext db, int id, SmtpEmailSender emailSender) =>
+            app.MapPost("/api/invitation/{id}/resend", async (HttpContext httpContext, ChoresAppDbContext db, int id, SmtpEmailSender emailSender) =>
             {
+                var userFamilyIdClaim = httpContext.User.FindFirst("familyId");
+                if (userFamilyIdClaim == null || !int.TryParse(userFamilyIdClaim.Value, out int userFamilyId))
+                {
+                    return Results.Unauthorized();
+                }
+
                 try
                 {
                     var invitation = await db.Invitations.FindAsync(id);
                     if (invitation == null) return Results.NotFound();
+
+                    if (invitation.FamilyId != userFamilyId)
+                    {
+                        return Results.Forbid();
+                    }
 
                     invitation.Token = Guid.NewGuid().ToString(); // Generate a new token
                     invitation.CreatedAt = DateTime.UtcNow;
@@ -236,12 +271,23 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Delete Invitation
-            app.MapDelete("/api/invitation/delete/{id}", async (ChoresAppDbContext db, int id) =>
+            app.MapDelete("/api/invitation/delete/{id}", async (HttpContext httpContext, ChoresAppDbContext db, int id) =>
             {
+                var userFamilyIdClaim = httpContext.User.FindFirst("familyId");
+                if (userFamilyIdClaim == null || !int.TryParse(userFamilyIdClaim.Value, out int userFamilyId))
+                {
+                    return Results.Unauthorized();
+                }
+
                 try
                 {
                     var invitation = await db.Invitations.FindAsync(id);
                     if (invitation == null) return Results.NotFound("Invitation not found.");
+
+                    if (invitation.FamilyId != userFamilyId)
+                    {
+                        return Results.Forbid();
+                    }
 
                     db.Invitations.Remove(invitation);
                     await db.SaveChangesAsync();
@@ -255,14 +301,27 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Create Invitations
-            app.MapPost("/api/invitations/create", async (ChoresAppDbContext db, List<InvitationDto> invitationDtos, SmtpEmailSender emailSender) =>
+            app.MapPost("/api/invitations/create", async (HttpContext httpContext, ChoresAppDbContext db, List<InvitationDto> invitationDtos, SmtpEmailSender emailSender) =>
             {
+                var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+                var userFamilyIdClaim = httpContext.User.FindFirst("familyId");
+
+                if (userIdClaim == null || userFamilyIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId) || !int.TryParse(userFamilyIdClaim.Value, out int userFamilyId))
+                {
+                    return Results.Unauthorized();
+                }
+
                 try
                 {
                     var createdInvitations = new List<InvitationDto>();
 
                     foreach (var invitationDto in invitationDtos)
                     {
+                        if (invitationDto.FamilyId != userFamilyId || invitationDto.InviterId != userId)
+                        {
+                            return Results.Forbid();
+                        }
+
                         // Fetch the Family and ChoreUser (Inviter) from the database
                         var family = await db.Families.FindAsync(invitationDto.FamilyId);
                         var inviter = await db.ChoreUsers.FindAsync(invitationDto.InviterId);
