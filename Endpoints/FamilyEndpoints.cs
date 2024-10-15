@@ -2,16 +2,29 @@ using Microsoft.EntityFrameworkCore;
 using ChoresApp.Models;
 using ChoresApp.Helpers;
 using ChoresApi.Models.DTOs;
+using System.Security.Claims;
 
 namespace ChoresApp.Endpoints
 {
     public static class FamilyEndpoints
     {
+        private static int GetUserFamilyId(ClaimsPrincipal user)
+        {
+            var familyIdClaim = user.FindFirst("familyId");
+            return familyIdClaim != null && int.TryParse(familyIdClaim.Value, out int familyId) ? familyId : 0;
+        }
+
         public static void MapFamilyEndpoints(this WebApplication app)
         {
             // Create
-            app.MapPost("/api/family/add", async (ChoresAppDbContext db, FamilyDto familyDto) =>
+            app.MapPost("/api/family/add", async (HttpContext httpContext, ChoresAppDbContext db, FamilyDto familyDto) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId != 0)
+                {
+                    return Results.BadRequest("User already belongs to a family");
+                }
+
                 try
                 {
                     var family = new Family
@@ -43,9 +56,15 @@ namespace ChoresApp.Endpoints
                 }
             }).RequireAuthorization();
 
-            // Read (Get all)
-            app.MapGet("/api/family/getall", async (ChoresAppDbContext db) =>
+            // Read (Get all) Admin only
+            app.MapGet("/api/family/getall", async (HttpContext httpContext, ChoresAppDbContext db) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId == 0)
+                {
+                    return Results.BadRequest("User does not belong to a family");
+                }
+
                 try
                 {
                     return Results.Ok(await db.Families.ToListAsync());
@@ -54,11 +73,18 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve families: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization("AdminOnly");
 
             // Read (Get by id)
-            app.MapGet("/api/family/{id}", async (ChoresAppDbContext db, int id) =>
+            app.MapGet("/api/family/{id}", async (HttpContext httpContext, ChoresAppDbContext db, int id) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+
+                if (userFamilyId != id)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var family = await db.Families.FindAsync(id);
@@ -68,11 +94,17 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve family: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Update
-            app.MapPut("/api/family/{id}", async (ChoresAppDbContext db, int id, Family updatedFamily) =>
+            app.MapPut("/api/family/{id}", async (HttpContext httpContext, ChoresAppDbContext db, int id, Family updatedFamily) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId != id)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var family = await db.Families.FindAsync(id);
@@ -88,11 +120,17 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to update family: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Delete
-            app.MapDelete("/api/family/{id}", async (ChoresAppDbContext db, int id) =>
+            app.MapDelete("/api/family/{id}", async (HttpContext httpContext, ChoresAppDbContext db, int id) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId != id)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var family = await db.Families.FindAsync(id);
@@ -106,11 +144,17 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to delete family: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
 
             // Get users by family id
-            app.MapGet("/api/family/{id}/users", async (ChoresAppDbContext db, int id) =>
+            app.MapGet("/api/family/{id}/users", async (HttpContext httpContext, ChoresAppDbContext db, int id) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId != id)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var users = await db.ChoreUsers
@@ -126,7 +170,7 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve users for family: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
         }
     }
 }

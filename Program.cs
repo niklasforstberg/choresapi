@@ -98,7 +98,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireClaim("role", "Admin"));
+});
 
 builder.Services.AddScoped<SmtpEmailSender>();
 
