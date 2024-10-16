@@ -73,6 +73,25 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve families: {ex.Message}");
                 }
+            }).RequireAuthorization();
+
+            // Read (Get all families) Admin only
+            app.MapGet("/api/families/getall", async (HttpContext httpContext, ChoresAppDbContext db) =>
+            {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId == 0)
+                {
+                    return Results.BadRequest("User does not belong to a family");
+                }
+
+                try
+                {
+                    return Results.Ok(await db.Families.ToListAsync());
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest($"Failed to retrieve families: {ex.Message}");
+                }
             }).RequireAuthorization("AdminOnly");
 
             // Read (Get by id)
