@@ -33,7 +33,7 @@ namespace ChoresApp.Endpoints
                         CreatedBy = familyDto.CreatedBy,
                         CreatedAt = DateTime.Now
                     };
-                
+
                     db.Families.Add(family);
                     await db.SaveChangesAsync();
 
@@ -56,8 +56,8 @@ namespace ChoresApp.Endpoints
                 }
             }).RequireAuthorization();
 
-            // Read (Get all) Admin only
-            app.MapGet("/api/family/getall", async (HttpContext httpContext, ChoresAppDbContext db) =>
+            // Read (Get all)
+            app.MapGet("/api/family/{id}/getallmembers", async (HttpContext httpContext, ChoresAppDbContext db) =>
             {
                 var userFamilyId = GetUserFamilyId(httpContext.User);
                 if (userFamilyId == 0)
@@ -67,7 +67,7 @@ namespace ChoresApp.Endpoints
 
                 try
                 {
-                    return Results.Ok(await db.Families.ToListAsync());
+                    return Results.Ok(await db.ChoreUsers.Where(cu => cu.FamilyId == userFamilyId).ToListAsync());
                 }
                 catch (Exception ex)
                 {
