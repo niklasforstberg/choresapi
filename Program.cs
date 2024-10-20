@@ -28,7 +28,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ChoresApp API", Version = "v1" });
-    
+
     // Add JWT Authentication
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -55,8 +55,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-//JWT
-Console.WriteLine(builder.Configuration["Jwt:Audience"]);
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -79,7 +78,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 context.HandleResponse();
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/json";
-                
+
                 // Only use this for debugging. Remove in production!
                 var result = JsonSerializer.Serialize("401 Error: " + context.Error + " - " + context.ErrorDescription);
                 return context.Response.WriteAsync(result);
@@ -92,7 +91,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("http://localhost:5173")
+        builder.AllowAnyOrigin()
                .AllowAnyHeader()
                .AllowAnyMethod();
     });

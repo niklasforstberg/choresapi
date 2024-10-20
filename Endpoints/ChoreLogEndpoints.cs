@@ -228,6 +228,37 @@ namespace ChoresApp.Endpoints
                     return Results.BadRequest($"Failed to retrieve log entries: {ex.Message}");
                 }
             }).RequireAuthorization();
+
+            // Get the last N entries from ChoreLog
+            app.MapGet("/api/chorelog/recent/{count}", async (ChoresAppDbContext db, int count) =>
+            {
+                try
+                {
+                    var recentLogs = await db.ChoresLog
+                        .OrderByDescending(l => l.DueDate)
+                        .Take(count)
+                        .Include(l => l.Chore)
+                        .Include(l => l.ChoreUser)
+                        .Select(l => new ChoreLogDto
+                        {
+                            Id = l.Id,
+                            IsCompleted = l.IsCompleted,
+                            DueDate = l.DueDate,
+                            ChoreId = l.ChoreId,
+                            UserId = l.UserId,
+                            ChoreName = l.Chore.Name,
+                            UserName = $"{l.ChoreUser.FirstName} {l.ChoreUser.LastName}",
+                            ReportedByUserId = l.ReportedByUserId
+                        })
+                        .ToListAsync();
+
+                    return Results.Ok(recentLogs);
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest($"Failed to retrieve recent log entries: {ex.Message}");
+                }
+            }).RequireAuthorization();
         }
     }
 }

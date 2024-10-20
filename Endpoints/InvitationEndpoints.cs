@@ -118,7 +118,7 @@ namespace ChoresApp.Endpoints
             });
 
             // Accept Invitation
-            app.MapPost("/api/invitation/{token}/accept",  [AllowAnonymous] async (ChoresAppDbContext db, string token) =>
+            app.MapPost("/api/invitation/{token}/accept", [AllowAnonymous] async (ChoresAppDbContext db, string token) =>
             {
                 try
                 {
@@ -165,7 +165,7 @@ namespace ChoresApp.Endpoints
             });
 
             // Reject Invitation
-            app.MapPost("/api/invitation/{token}/reject",  [AllowAnonymous] async (ChoresAppDbContext db, string token) =>
+            app.MapPost("/api/invitation/{token}/reject", [AllowAnonymous] async (ChoresAppDbContext db, string token) =>
             {
                 try
                 {
