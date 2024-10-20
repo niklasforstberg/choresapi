@@ -2,16 +2,29 @@ using Microsoft.EntityFrameworkCore;
 using ChoresApp.Models;
 using ChoresApi.Models.DTOs;
 using ChoresApp.Helpers;
+using System.Security.Claims;
 
 namespace ChoresApp.Endpoints
 {
     public static class ChoreEndpoints
     {
+        private static int GetUserFamilyId(ClaimsPrincipal user)
+        {
+            var familyIdClaim = user.FindFirst("familyId");
+            return familyIdClaim != null && int.TryParse(familyIdClaim.Value, out int familyId) ? familyId : 0;
+        }
+
         public static void MapChoreEndpoints(this WebApplication app)
         {
             // Add
-            app.MapPost("/api/chore/add", async (ChoresAppDbContext db, ChoreDto choreDto) =>
+            app.MapPost("/api/chore/add", async (HttpContext httpContext, ChoresAppDbContext db, ChoreDto choreDto) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId != choreDto.FamilyId)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var chore = new Chore
@@ -34,8 +47,14 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Update
-            app.MapPut("/api/chore/{id}", async (ChoresAppDbContext db, int id, ChoreDto updatedChore) =>
+            app.MapPut("/api/chore/{id}", async (HttpContext httpContext, ChoresAppDbContext db, int id, ChoreDto updatedChore) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId != updatedChore.FamilyId)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var chore = await db.Chores.FindAsync(id);
@@ -55,12 +74,19 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Delete
-            app.MapDelete("/api/chore/delete/{id}", async (ChoresAppDbContext db, int id) =>
+            app.MapDelete("/api/chore/delete/{id}", async (HttpContext httpContext, ChoresAppDbContext db, int id) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+
                 try
                 {
                     var chore = await db.Chores.FindAsync(id);
                     if (chore == null) return Results.NotFound();
+
+                    if (userFamilyId != chore.FamilyId)
+                    {
+                        return Results.Forbid();
+                    }
 
                     db.Chores.Remove(chore);
                     await db.SaveChangesAsync();
@@ -73,8 +99,14 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get all (for one family)
-            app.MapGet("/api/chore/getall/{familyId}", async (ChoresAppDbContext db, int familyId) =>
+            app.MapGet("/api/chore/getall/{familyId}", async (HttpContext httpContext, ChoresAppDbContext db, int familyId) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId != familyId)
+                {
+                    return Results.Forbid();
+                }
+
                 try
                 {
                     var chores = await db.Chores
@@ -93,16 +125,18 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Delete list of Chores
-            app.MapPost("/api/chore/deletemany", async (ChoresAppDbContext db, List<int> choreIds) =>
+            app.MapPost("/api/chore/deletemany", async (HttpContext httpContext, ChoresAppDbContext db, List<int> choreIds) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+
                 try
                 {
                     var choresToDelete = await db.Chores
-                        .Where(c => choreIds.Contains(c.Id))
+                        .Where(c => choreIds.Contains(c.Id) && c.FamilyId == userFamilyId)
                         .ToListAsync();
 
                     if (choresToDelete.Count == 0)
-                        return Results.NotFound("No chores found with the provided ids");
+                        return Results.NotFound("No chores found with the provided ids for your family");
 
                     db.Chores.RemoveRange(choresToDelete);
                     await db.SaveChangesAsync();
