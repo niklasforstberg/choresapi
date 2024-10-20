@@ -56,25 +56,6 @@ namespace ChoresApp.Endpoints
                 }
             }).RequireAuthorization();
 
-            // Read (Get all)
-            app.MapGet("/api/family/{id}/getallmembers", async (HttpContext httpContext, ChoresAppDbContext db) =>
-            {
-                var userFamilyId = GetUserFamilyId(httpContext.User);
-                if (userFamilyId == 0)
-                {
-                    return Results.BadRequest("User does not belong to a family");
-                }
-
-                try
-                {
-                    return Results.Ok(await db.ChoreUsers.Where(cu => cu.FamilyId == userFamilyId).ToListAsync());
-                }
-                catch (Exception ex)
-                {
-                    return Results.BadRequest($"Failed to retrieve families: {ex.Message}");
-                }
-            }).RequireAuthorization();
-
             // Read (Get all families) Admin only
             app.MapGet("/api/families/getall", async (HttpContext httpContext, ChoresAppDbContext db) =>
             {
@@ -166,7 +147,7 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get users by family id
-            app.MapGet("/api/family/{id}/users", async (HttpContext httpContext, ChoresAppDbContext db, int id) =>
+            app.MapGet("/api/family/{id}/getfamilymembers", async (HttpContext httpContext, ChoresAppDbContext db, int id) =>
             {
                 var userFamilyId = GetUserFamilyId(httpContext.User);
                 if (userFamilyId != id)
