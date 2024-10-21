@@ -4,28 +4,36 @@ using ChoresApp.Models.DTOs;
 using ChoresApp.Helpers;
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ChoresApp.Endpoints
 {
     public static class ChoreLogEndpoints
     {
+        private static int GetUserFamilyId(ClaimsPrincipal user)
+        {
+            var familyIdClaim = user.FindFirst("familyId");
+            return familyIdClaim != null && int.TryParse(familyIdClaim.Value, out int familyId) ? familyId : 0;
+        }
+
         public static void MapChoreLogEndpoints(this WebApplication app)
         {
             // Add logentry
-            app.MapPost("/api/chorelog/add", async (ChoresAppDbContext db, ChoreLogDto logDto) =>
+            app.MapPost("/api/chorelog/add", async (HttpContext httpContext, ChoresAppDbContext db, ChoreLogDto logDto) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
                 try
                 {
+                    var user = await db.ChoreUsers.FindAsync(logDto.UserId);
+                    if (user == null || user.FamilyId != userFamilyId)
+                    {
+                        return Results.Forbid();
+                    }
+
                     var chore = await db.Chores.FindAsync(logDto.ChoreId);
                     if (chore == null)
                     {
                         return Results.NotFound($"Chore with ID {logDto.ChoreId} not found.");
-                    }
-
-                    var user = await db.ChoreUsers.FindAsync(logDto.UserId);
-                    if (user == null)
-                    {
-                        return Results.NotFound($"User with ID {logDto.UserId} not found.");
                     }
 
                     var choreLog = new ChoreLog
@@ -51,12 +59,16 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Update logentry
-            app.MapPut("/api/chorelog/{id}", async (ChoresAppDbContext db, int id, ChoreLogDto logDto) =>
+            app.MapPut("/api/chorelog/{id}", async (HttpContext httpContext, ChoresAppDbContext db, int id, ChoreLogDto logDto) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
                 try
                 {
-                    var choreLog = await db.ChoresLog.FindAsync(id);
-                    if (choreLog == null) return Results.NotFound();
+                    var choreLog = await db.ChoresLog
+                        .Include(cl => cl.ChoreUser)
+                        .FirstOrDefaultAsync(cl => cl.Id == id);
+                    if (choreLog == null || choreLog.ChoreUser.FamilyId != userFamilyId)
+                        return Results.Forbid();
 
                     choreLog.IsCompleted = logDto.IsCompleted;
                     choreLog.DueDate = logDto.DueDate;
@@ -73,12 +85,16 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Delete logentry
-            app.MapDelete("/api/chorelog/{id}", async (ChoresAppDbContext db, int id) =>
+            app.MapDelete("/api/chorelog/{id}", async (HttpContext httpContext, ChoresAppDbContext db, int id) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
                 try
                 {
-                    var choreLog = await db.ChoresLog.FindAsync(id);
-                    if (choreLog == null) return Results.NotFound();
+                    var choreLog = await db.ChoresLog
+                        .Include(cl => cl.ChoreUser)
+                        .FirstOrDefaultAsync(cl => cl.Id == id);
+                    if (choreLog == null || choreLog.ChoreUser.FamilyId != userFamilyId)
+                        return Results.Forbid();
 
                     db.ChoresLog.Remove(choreLog);
                     await db.SaveChangesAsync();
@@ -91,10 +107,15 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get all logentries for a user
-            app.MapGet("/api/chorelog/user/{userId}", async (ChoresAppDbContext db, int userId) =>
+            app.MapGet("/api/chorelog/user/{userId}", async (HttpContext httpContext, ChoresAppDbContext db, int userId) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
                 try
                 {
+                    var user = await db.ChoreUsers.FindAsync(userId);
+                    if (user == null || user.FamilyId != userFamilyId)
+                        return Results.Forbid();
+
                     var logs = await db.ChoresLog
                         .Where(l => l.UserId == userId)
                         .Include(l => l.Chore)
@@ -121,8 +142,12 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get all logentries for a family
-            app.MapGet("/api/chorelog/family/{familyId}", async (ChoresAppDbContext db, int familyId) =>
+            app.MapGet("/api/chorelog/family/{familyId}", async (HttpContext httpContext, ChoresAppDbContext db, int familyId) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (familyId != userFamilyId)
+                    return Results.Forbid();
+
                 try
                 {
                     var logs = await db.ChoresLog
@@ -151,10 +176,15 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get all logentries for a chore
-            app.MapGet("/api/chorelog/chore/{choreId}", async (ChoresAppDbContext db, int choreId) =>
+            app.MapGet("/api/chorelog/chore/{choreId}", async (HttpContext httpContext, ChoresAppDbContext db, int choreId) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
                 try
                 {
+                    var chore = await db.Chores.FindAsync(choreId);
+                    if (chore == null || chore.FamilyId != userFamilyId)
+                        return Results.Forbid();
+
                     var logs = await db.ChoresLog
                         .Where(l => l.ChoreId == choreId)
                         .Include(l => l.Chore)
@@ -181,11 +211,15 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Delete list of logentries
-            app.MapDelete("/api/chorelog/deletemultiple", async ([FromServices] ChoresAppDbContext db, [FromBody] List<int> ids) =>
+            app.MapDelete("/api/chorelog/deletemultiple", async (HttpContext httpContext, [FromServices] ChoresAppDbContext db, [FromBody] List<int> ids) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
                 try
                 {
-                    var logsToDelete = await db.ChoresLog.Where(l => ids.Contains(l.Id)).ToListAsync();
+                    var logsToDelete = await db.ChoresLog
+                        .Where(l => ids.Contains(l.Id) && l.ChoreUser.FamilyId == userFamilyId)
+                        .ToListAsync();
+
                     db.ChoresLog.RemoveRange(logsToDelete);
                     await db.SaveChangesAsync();
                     return Results.Ok();
@@ -197,8 +231,12 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get all logentries for a family and a specific week
-            app.MapGet("/api/chorelog/family/{familyId}/week", async (ChoresAppDbContext db, int familyId, int year, int weekNumber) =>
+            app.MapGet("/api/chorelog/family/{familyId}/week", async (HttpContext httpContext, ChoresAppDbContext db, int familyId, int year, int weekNumber) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (familyId != userFamilyId)
+                    return Results.Forbid();
+
                 try
                 {
                     var startOfWeek = ISOWeek.ToDateTime(year, weekNumber, DayOfWeek.Monday);
@@ -230,11 +268,13 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get the last N entries from ChoreLog
-            app.MapGet("/api/chorelog/recent/{count}", async (ChoresAppDbContext db, int count) =>
+            app.MapGet("/api/chorelog/recent/{count}", async (HttpContext httpContext, ChoresAppDbContext db, int count) =>
             {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
                 try
                 {
                     var recentLogs = await db.ChoresLog
+                        .Where(l => l.ChoreUser.FamilyId == userFamilyId)
                         .OrderByDescending(l => l.DueDate)
                         .Take(count)
                         .Include(l => l.Chore)

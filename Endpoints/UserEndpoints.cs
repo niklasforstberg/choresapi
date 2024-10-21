@@ -23,7 +23,7 @@ namespace ChoresApp.Endpoints
                 }
             }).RequireAuthorization();
 
-            // Read (Get all)
+            // Read (Get all) - Admin only
             app.MapGet("/api/user/getall", async (ChoresAppDbContext db) =>
             {
                 try
@@ -34,7 +34,7 @@ namespace ChoresApp.Endpoints
                 {
                     return Results.BadRequest($"Failed to retrieve users: {ex.Message}");
                 }
-            }).RequireAuthorization();
+            }).RequireAuthorization("Admin");
 
             // Read (Get by id)
             app.MapGet("/api/user/{id}", async (ChoresAppDbContext db, int id) =>
