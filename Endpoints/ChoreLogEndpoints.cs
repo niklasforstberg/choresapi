@@ -38,7 +38,7 @@ namespace ChoresApp.Endpoints
 
                     var choreLog = new ChoreLog
                     {
-                        DueDate = logDto.DueDate,
+                        CompletedDate = logDto.CompletedDate,
                         Chore = chore,
                         ChoreUser = user,
                         UserId = logDto.UserId,
@@ -69,7 +69,7 @@ namespace ChoresApp.Endpoints
                     if (choreLog == null || choreLog.ChoreUser.FamilyId != userFamilyId)
                         return Results.Forbid();
 
-                    choreLog.DueDate = logDto.DueDate;
+                    choreLog.CompletedDate = logDto.CompletedDate;
                     choreLog.ChoreId = logDto.ChoreId;
                     choreLog.UserId = logDto.UserId;
 
@@ -121,7 +121,7 @@ namespace ChoresApp.Endpoints
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            DueDate = l.DueDate,
+                            CompletedDate = l.CompletedDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
                             ChoreName = l.Chore.Name,
@@ -154,7 +154,7 @@ namespace ChoresApp.Endpoints
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            DueDate = l.DueDate,
+                            CompletedDate = l.CompletedDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
                             ChoreName = l.Chore.Name,
@@ -188,7 +188,7 @@ namespace ChoresApp.Endpoints
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            DueDate = l.DueDate,
+                            CompletedDate = l.CompletedDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
                             ChoreName = l.Chore.Name,
@@ -238,13 +238,13 @@ namespace ChoresApp.Endpoints
                     var endOfWeek = startOfWeek.AddDays(7);
 
                     var logs = await db.ChoresLog
-                        .Where(l => l.ChoreUser.FamilyId == familyId && l.DueDate >= startOfWeek && l.DueDate < endOfWeek)
+                        .Where(l => l.ChoreUser.FamilyId == familyId && l.CompletedDate >= startOfWeek && l.CompletedDate < endOfWeek)
                         .Include(l => l.Chore)
                         .Include(l => l.ChoreUser)
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            DueDate = l.DueDate,
+                            CompletedDate = l.CompletedDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
                             ChoreName = l.Chore.Name,
@@ -269,14 +269,14 @@ namespace ChoresApp.Endpoints
                 {
                     var recentLogs = await db.ChoresLog
                         .Where(l => l.ChoreUser.FamilyId == userFamilyId)
-                        .OrderByDescending(l => l.DueDate)
+                        .OrderByDescending(l => l.CompletedDate)
                         .Take(count)
                         .Include(l => l.Chore)
                         .Include(l => l.ChoreUser)
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            DueDate = l.DueDate,
+                            CompletedDate = l.CompletedDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
                             ChoreName = l.Chore.Name,
@@ -311,10 +311,10 @@ namespace ChoresApp.Endpoints
                         .Where(l => l.UserId == userId && l.ChoreId == choreId);
 
                     if (startDate.HasValue)
-                        query = query.Where(l => l.DueDate >= startDate.Value);
+                        query = query.Where(l => l.CompletedDate >= startDate.Value);
 
                     if (endDate.HasValue)
-                        query = query.Where(l => l.DueDate <= endDate.Value);
+                        query = query.Where(l => l.CompletedDate <= endDate.Value);
 
                     var count = await query.CountAsync();
 

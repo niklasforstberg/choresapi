@@ -5,7 +5,7 @@ namespace ChoresApp.Models.DTOs
     public class ChoreLogDto
     {
         public int Id { get; set; }
-        public DateTime? DueDate { get; set; }
+        public DateTime? CompletedDate { get; set; }
         public int ChoreId { get; set; }
         public int UserId { get; set; }
         public required int ReportedByUserId { get; set; }
