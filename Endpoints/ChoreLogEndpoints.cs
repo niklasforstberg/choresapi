@@ -38,7 +38,6 @@ namespace ChoresApp.Endpoints
 
                     var choreLog = new ChoreLog
                     {
-                        IsCompleted = logDto.IsCompleted,
                         DueDate = logDto.DueDate,
                         Chore = chore,
                         ChoreUser = user,
@@ -70,7 +69,6 @@ namespace ChoresApp.Endpoints
                     if (choreLog == null || choreLog.ChoreUser.FamilyId != userFamilyId)
                         return Results.Forbid();
 
-                    choreLog.IsCompleted = logDto.IsCompleted;
                     choreLog.DueDate = logDto.DueDate;
                     choreLog.ChoreId = logDto.ChoreId;
                     choreLog.UserId = logDto.UserId;
@@ -123,7 +121,6 @@ namespace ChoresApp.Endpoints
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            IsCompleted = l.IsCompleted,
                             DueDate = l.DueDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
@@ -157,7 +154,6 @@ namespace ChoresApp.Endpoints
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            IsCompleted = l.IsCompleted,
                             DueDate = l.DueDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
@@ -192,7 +188,6 @@ namespace ChoresApp.Endpoints
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            IsCompleted = l.IsCompleted,
                             DueDate = l.DueDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
@@ -249,7 +244,6 @@ namespace ChoresApp.Endpoints
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            IsCompleted = l.IsCompleted,
                             DueDate = l.DueDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
@@ -282,7 +276,6 @@ namespace ChoresApp.Endpoints
                         .Select(l => new ChoreLogDto
                         {
                             Id = l.Id,
-                            IsCompleted = l.IsCompleted,
                             DueDate = l.DueDate,
                             ChoreId = l.ChoreId,
                             UserId = l.UserId,
@@ -297,6 +290,39 @@ namespace ChoresApp.Endpoints
                 catch (Exception ex)
                 {
                     return Results.BadRequest($"Failed to retrieve recent log entries: {ex.Message}");
+                }
+            }).RequireAuthorization();
+
+            // Get chore completion count for a user within a date range
+            app.MapGet("/api/chorelog/count/{userId}/{choreId}", async (HttpContext httpContext, ChoresAppDbContext db, int userId, int choreId, DateTime? startDate, DateTime? endDate) =>
+            {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                try
+                {
+                    var user = await db.ChoreUsers.FindAsync(userId);
+                    if (user == null || user.FamilyId != userFamilyId)
+                        return Results.Forbid();
+
+                    var chore = await db.Chores.FindAsync(choreId);
+                    if (chore == null || chore.FamilyId != userFamilyId)
+                        return Results.Forbid();
+
+                    var query = db.ChoresLog
+                        .Where(l => l.UserId == userId && l.ChoreId == choreId);
+
+                    if (startDate.HasValue)
+                        query = query.Where(l => l.DueDate >= startDate.Value);
+
+                    if (endDate.HasValue)
+                        query = query.Where(l => l.DueDate <= endDate.Value);
+
+                    var count = await query.CountAsync();
+
+                    return Results.Ok(new { Count = count });
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest($"Failed to retrieve chore completion count: {ex.Message}");
                 }
             }).RequireAuthorization();
         }

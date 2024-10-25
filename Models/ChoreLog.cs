@@ -6,7 +6,6 @@ namespace ChoresApp.Models
     {
         [Key]
         public int Id { get; set; }
-        public bool? IsCompleted { get; set; }
         public DateTime? DueDate { get; set; }
         public int ChoreId { get; set; }
         public int UserId { get; set; }
