@@ -183,7 +183,7 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Get Pending Invitations for a Family
-            app.MapGet("/api/family/{familyId}/invitations", async (HttpContext httpContext, ChoresAppDbContext db, int familyId) =>
+            app.MapGet("/api/invitations/family/{familyId}", async (HttpContext httpContext, ChoresAppDbContext db, int familyId) =>
             {
                 var userFamilyIdClaim = httpContext.User.FindFirst("familyId");
                 if (userFamilyIdClaim == null || !int.TryParse(userFamilyIdClaim.Value, out int userFamilyId))
