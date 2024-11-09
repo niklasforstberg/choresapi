@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ChoresApp.Models;
 using ChoresApp.Helpers;
+using System.Security.Claims;
 
 namespace ChoresApp.Endpoints
 {
@@ -81,7 +82,7 @@ namespace ChoresApp.Endpoints
             }).RequireAuthorization();
 
             // Delete
-            app.MapDelete("/users/{id}", async (ChoresAppDbContext db, int id) =>
+            app.MapDelete("api/users/{id}", async (ChoresAppDbContext db, int id) =>
             {
                 try
                 {
@@ -95,6 +96,43 @@ namespace ChoresApp.Endpoints
                 catch (Exception ex)
                 {
                     return Results.BadRequest($"Failed to delete user: {ex.Message}");
+                }
+            }).RequireAuthorization();
+
+            // Get detailed user info (me endpoint)
+            app.MapGet("/api/user/me", async (ChoresAppDbContext db, ClaimsPrincipal user) =>
+            {
+                try
+                {
+                    var userId = user.FindFirst("id")?.Value;
+                    if (userId == null) return Results.Unauthorized();
+
+                    var currentUser = await db.ChoreUsers
+                        .Include(u => u.Family)
+                        .FirstOrDefaultAsync(u => u.Id == int.Parse(userId));
+
+                    if (currentUser == null) return Results.NotFound();
+
+                    return Results.Ok(new
+                    {
+                        id = currentUser.Id,
+                        email = currentUser.Email,
+                        firstName = currentUser.FirstName,
+                        lastName = currentUser.LastName,
+                        role = currentUser.Role,
+                        familyId = currentUser.FamilyId,
+                        familyName = currentUser.Family?.Name,
+                        phoneNumber = currentUser.PhoneNumber,
+                        address = currentUser.Address,
+                        city = currentUser.City,
+                        state = currentUser.State,
+                        zipCode = currentUser.ZipCode,
+                        country = currentUser.Country
+                    });
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest($"Failed to retrieve user info: {ex.Message}");
                 }
             }).RequireAuthorization();
         }

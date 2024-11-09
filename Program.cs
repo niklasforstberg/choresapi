@@ -113,7 +113,6 @@ app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "The family chores API");
         c.InjectStylesheet("/swagger/custom.css");
-        c.RoutePrefix = String.Empty;
     });
 
 app.UseCors();
