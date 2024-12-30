@@ -485,3 +485,8 @@ $RECYCLE.BIN/
 *.swp
 
 dev_token_user*
+localhost+1.pem
+localhost+1-key.pem
+
+# Data directory
+/data/

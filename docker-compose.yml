@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  choresapi:
+    build: .
+    ports:
+      - "7165:7165"
+      - "5165:5165"
+    volumes:
+      - ./data:/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production 
