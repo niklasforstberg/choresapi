@@ -16,4 +16,8 @@ ENV ASPNETCORE_HTTPS_PORT=7165
 EXPOSE 7165
 EXPOSE 5165
 
-ENTRYPOINT ["dotnet", "ChoresApi.dll"] 
+ENTRYPOINT ["dotnet", "ChoresApi.dll"]
+
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup appuser
+USER appuser 
