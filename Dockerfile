@@ -11,13 +11,13 @@ COPY --from=build /app/publish .
 COPY localhost+1.pem ./
 COPY localhost+1-key.pem ./
 
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup appuser
+USER appuser
+
 ENV ASPNETCORE_URLS=https://+:7165;http://+:5165
 ENV ASPNETCORE_HTTPS_PORT=7165
 EXPOSE 7165
 EXPOSE 5165
 
-ENTRYPOINT ["dotnet", "ChoresApi.dll"]
-
-RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 --ingroup appgroup appuser
-USER appuser 
+ENTRYPOINT ["dotnet", "ChoresApi.dll"] 
