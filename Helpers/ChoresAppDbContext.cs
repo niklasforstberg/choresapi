@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ChoresApp.Models;
-
+using Microsoft.EntityFrameworkCore.SqlServer;
 
 namespace ChoresApp.Helpers
 {
@@ -14,13 +14,5 @@ namespace ChoresApp.Helpers
         public DbSet<Family> Families { get; set; }
         public DbSet<Invitation> Invitations { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<ChoreUser>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
-        }
     }
 }

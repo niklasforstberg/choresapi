@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using System.Text.Json;
 using ChoresApp.Integrations;
 using System.Collections.Generic;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,7 @@ if (builder.Environment.IsDevelopment())
 var configuration = builder.Configuration;
 
 builder.Services.AddDbContext<ChoresAppDbContext>(options =>
-        options.UseSqlite(configuration.GetConnectionString("SqliteConnection")));
+    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddEndpointsApiExplorer();
 

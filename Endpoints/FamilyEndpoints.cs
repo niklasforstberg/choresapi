@@ -56,6 +56,43 @@ namespace ChoresApp.Endpoints
                 }
             }).RequireAuthorization();
 
+            // Read (Get all family members in the user's family)
+            app.MapGet("/api/family/{id}/getall", async (HttpContext httpContext, ChoresAppDbContext db) =>
+            {
+                var userFamilyId = GetUserFamilyId(httpContext.User);
+                if (userFamilyId == 0)
+                {
+                    return Results.BadRequest("User does not belong to a family");
+                }
+
+                try
+                {
+                    var familyMembers = await db.ChoreUsers
+                        .Where(u => u.FamilyId == userFamilyId)
+                        .Select(u => new UserDto 
+                        {
+                            Email = u.Email!,
+                            FirstName = u.FirstName,
+                            LastName = u.LastName,
+                            Role = u.Role!,
+                            FamilyId = u.FamilyId,
+                            PhoneNumber = u.PhoneNumber,
+                            Address = u.Address,
+                            City = u.City,
+                            State = u.State,
+                            ZipCode = u.ZipCode,
+                            Country = u.Country
+                        })
+                        .ToListAsync();
+
+                    return Results.Ok(familyMembers);
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest($"Failed to retrieve family members: {ex.Message}");
+                }
+            }).RequireAuthorization();
+
             // Read (Get all families) Admin only
             app.MapGet("/api/families/getall", async (HttpContext httpContext, ChoresAppDbContext db) =>
             {
