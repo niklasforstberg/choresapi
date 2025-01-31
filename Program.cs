@@ -92,7 +92,8 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.AllowAnyOrigin()
+        // Update CORS to accept configurable origins
+        builder.WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:5173" })
                .AllowAnyHeader()
                .AllowAnyMethod();
     });
