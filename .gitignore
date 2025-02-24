@@ -490,3 +490,5 @@ localhost+1-key.pem
 
 # Data directory
 /data/
+
+env.list
