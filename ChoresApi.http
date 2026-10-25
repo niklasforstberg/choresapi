@@ -1,6 +1,0 @@
-@ChoresApi_HostAddress = http://localhost:5032
-
-GET {{ChoresApi_HostAddress}}/swagger/
-Accept: application/json
-
-###
