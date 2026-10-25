@@ -1,0 +1,7 @@
+obj/
+bin/
+logs/
+.git/
+.claude/
+*.md
+appsettings.Development.json

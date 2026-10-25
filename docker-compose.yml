@@ -1,0 +1,15 @@
+services:
+  choresapi:
+    build: .
+    container_name: choresapi
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5104:8080"
+    env_file:
+      - /home/deploy/.env.choresapi
+    networks:
+      - db-network
+
+networks:
+  db-network:
+    external: true
