@@ -113,6 +113,17 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    // An invite code is all it takes to join a household, so guessing must stay slow.
+    options.AddPolicy("join", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ClientIp.GetClientIp(context),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0
+            }));
+
     options.OnRejected = async (context, ct) =>
     {
         var logger = context.HttpContext.RequestServices
@@ -149,6 +160,8 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
+app.MapHouseholdEndpoints();
+app.MapChoreEndpoints();
 
 app.MapHealthChecks("/health");
 

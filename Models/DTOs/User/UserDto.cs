@@ -1,3 +1,3 @@
 namespace ChoresApi.Models.DTOs.User;
 
-public record UserDto(int Id, string Email, string? Name, string Role);
+public record UserDto(int Id, string Email, string Name, string Role, int? HouseholdId);

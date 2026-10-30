@@ -6,18 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Keeps track of household chores — who did what, when. This repo is the REST API; the React SPA lives in its own repo, `../choresweb`. The structure follows Mynt (`../Mynt`), except that the frontend is a separate project.
 
-Current state: a foundation only — users, registration, login. The domain (households, chores, log) is still to be built.
+**The two repos are one project.** A change to an endpoint or DTO here usually needs the matching change in `../choresweb/src/api/` (and the reverse), so read and edit both without being asked.
+
+It replaces a paper sheet on the fridge: chores down the side, Monday–Sunday across, and each member writes their initial in the day they take something on. Some chores have a weekly quota per person ("Köket ×3", "Laga mat ×1"), others are done when needed. Everyone plans their own week.
 
 ## Commands
 
 ```bash
-dotnet run                        # Start the API (http://localhost:5070, Swagger at /swagger)
+dotnet run                        # Start the API (http://localhost:5072, Swagger at /swagger)
 dotnet build                      # Build
 dotnet ef migrations add <name>                             # Add a new EF migration
 ASPNETCORE_ENVIRONMENT=Development dotnet ef database update # Apply pending migrations (env required to pick up appsettings.Development.json)
 ```
 
-Run choresweb's `npm run dev` alongside; its Vite server proxies `/api` to port 5070.
+Run choresweb's `npm run dev` alongside; its Vite server proxies `/api` to port 5072.
 
 ## Architecture
 
@@ -29,6 +31,13 @@ Run choresweb's `npm run dev` alongside; its Vite server proxies `/api` to port 
 - DTOs live in `Models/DTOs/<domain>/`.
 - No CORS: in development the Vite proxy makes requests same-origin, and in production Caddy serves both projects from one host.
 - `/health` is the health check.
+- `Endpoints/CurrentUser` resolves the caller and their household; every household-scoped query filters on that, so another household's IDs come back as 404.
+
+**Domain model:**
+- `User` → own login; `Name` is required because its first letter marks their entries. Belongs to at most one `Household` (`HouseholdId` null until they create or join one).
+- `Household` → joined with its `InviteCode` (8 chars, no 0/O/1/I). `POST /api/household/join` is rate-limited per IP so codes can't be guessed.
+- `Chore` → belongs to the household; any member may edit the list. `WeeklyTarget` is per member per week, null for chores done when needed. Deleting a chore deletes its entries from past weeks too.
+- `ChoreEntry` → one member taking a chore on a `DateOnly`. Planned until `CompletedAt` is set. Several per member and day are allowed. Members see the whole household's entries (`GET /api/entries?weekStart=YYYY-MM-DD`) but create, tick off and delete only their own.
 
 **JWT config** is under `Jwt:Key/Issuer/Audience`. The key is Base64-encoded and only set in `appsettings.Development.json` (gitignored) or the server env file.
 

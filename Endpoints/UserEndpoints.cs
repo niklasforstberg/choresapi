@@ -10,14 +10,11 @@ public static class UserEndpoints
     {
         app.MapGet("/api/users/me", async (ApplicationDbContext db, ClaimsPrincipal principal) =>
         {
-            if (!int.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
-                return Results.Unauthorized();
-
-            var user = await db.Users.FindAsync(userId);
+            var user = await CurrentUser.FindAsync(db, principal);
             if (user == null)
                 return Results.Unauthorized();
 
-            return Results.Ok(new UserDto(user.Id, user.Email, user.Name, user.Role.ToString()));
+            return Results.Ok(new UserDto(user.Id, user.Email, user.Name, user.Role.ToString(), user.HouseholdId));
         })
         .RequireAuthorization();
     }

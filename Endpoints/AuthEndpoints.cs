@@ -46,6 +46,9 @@ public static class AuthEndpoints
             if (!IsPasswordStrong(request.Password))
                 return Results.BadRequest("Password must be at least 8 characters.");
 
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return Results.BadRequest("A name is required.");
+
             var email = request.Email.Trim();
             if (await db.Users.AnyAsync(u => u.Email == email))
                 return Results.BadRequest("Email already registered");
@@ -54,7 +57,7 @@ public static class AuthEndpoints
             {
                 Email = email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Name = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name.Trim(),
+                Name = request.Name.Trim(),
                 LastSeenAt = DateTime.UtcNow
             };
             db.Users.Add(user);

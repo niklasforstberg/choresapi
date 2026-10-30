@@ -22,6 +22,100 @@ namespace ChoresApi.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ChoresApi.Models.Chore", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("HouseholdId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("WeeklyTarget")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HouseholdId");
+
+                    b.ToTable("Chores");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.ChoreEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChoreId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ChoreId", "Date");
+
+                    b.ToTable("ChoreEntries");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.Household", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InviteCode")
+                        .IsUnique();
+
+                    b.ToTable("Households");
+                });
+
             modelBuilder.Entity("ChoresApi.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -40,10 +134,14 @@ namespace ChoresApi.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<int?>("HouseholdId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("LastSeenAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -59,7 +157,61 @@ namespace ChoresApi.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("HouseholdId");
+
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.Chore", b =>
+                {
+                    b.HasOne("ChoresApi.Models.Household", "Household")
+                        .WithMany("Chores")
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Household");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.ChoreEntry", b =>
+                {
+                    b.HasOne("ChoresApi.Models.Chore", "Chore")
+                        .WithMany("Entries")
+                        .HasForeignKey("ChoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ChoresApi.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chore");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.User", b =>
+                {
+                    b.HasOne("ChoresApi.Models.Household", "Household")
+                        .WithMany("Members")
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Household");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.Chore", b =>
+                {
+                    b.Navigation("Entries");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.Household", b =>
+                {
+                    b.Navigation("Chores");
+
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }
