@@ -105,14 +105,19 @@ public static class ChoreEndpoints
                 return Results.NotFound();
             if (!await db.Chores.AnyAsync(c => c.Id == request.ChoreId && c.HouseholdId == user.HouseholdId))
                 return Results.NotFound();
-            if (request.Date < Today())
-                return Results.BadRequest("Days that have passed can't be planned.");
 
-            var entry = new ChoreEntry { ChoreId = request.ChoreId, UserId = user.Id, Date = request.Date };
+            // A day that has passed can't be planned, only logged as done after the fact.
+            var entry = new ChoreEntry
+            {
+                ChoreId = request.ChoreId,
+                UserId = user.Id,
+                Date = request.Date,
+                CompletedAt = request.Date < Today() ? DateTime.UtcNow : null
+            };
             db.ChoreEntries.Add(entry);
             await db.SaveChangesAsync();
 
-            return Results.Ok(new ChoreEntryDto(entry.Id, entry.ChoreId, entry.UserId, entry.Date, false));
+            return Results.Ok(new ChoreEntryDto(entry.Id, entry.ChoreId, entry.UserId, entry.Date, entry.CompletedAt != null));
         });
 
         entries.MapPatch("/{id:int}", async (int id, UpdateChoreEntryDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
