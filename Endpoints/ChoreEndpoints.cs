@@ -105,6 +105,8 @@ public static class ChoreEndpoints
                 return Results.NotFound();
             if (!await db.Chores.AnyAsync(c => c.Id == request.ChoreId && c.HouseholdId == user.HouseholdId))
                 return Results.NotFound();
+            if (request.Date < Today())
+                return Results.BadRequest("Days that have passed can't be planned.");
 
             var entry = new ChoreEntry { ChoreId = request.ChoreId, UserId = user.Id, Date = request.Date };
             db.ChoreEntries.Add(entry);
@@ -119,6 +121,8 @@ public static class ChoreEndpoints
             var entry = await db.ChoreEntries.FirstOrDefaultAsync(e => e.Id == id && e.UserId == user!.Id);
             if (entry == null)
                 return Results.NotFound();
+            if (request.Completed && entry.Date > Today())
+                return Results.BadRequest("A chore can't be done ahead of its day.");
 
             entry.CompletedAt = request.Completed ? entry.CompletedAt ?? DateTime.UtcNow : null;
             await db.SaveChangesAsync();
@@ -138,6 +142,10 @@ public static class ChoreEndpoints
             return Results.NoContent();
         });
     }
+
+    // The household lives in Sweden, while the server clock runs on UTC.
+    private static DateOnly Today() =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Europe/Stockholm"));
 
     private static string? Validate(SaveChoreDto request)
     {
