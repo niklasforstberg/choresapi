@@ -34,7 +34,7 @@ Run choresweb's `npm run dev` alongside; its Vite server proxies `/api` to port 
 - `Endpoints/CurrentUser` resolves the caller and their household; every household-scoped query filters on that, so another household's IDs come back as 404.
 
 **Domain model:**
-- `User` → own login; `Name` is required because its first letter marks their entries. Belongs to at most one `Household` (`HouseholdId` null until they create or join one).
+- `User` → own login; `Name` is required because its first letter marks their entries. `PUT /api/users/me` changes name and email (an email change needs the current password, as the email is the login); `PUT /api/users/me/password` changes the password. Belongs to at most one `Household` (`HouseholdId` null until they create or join one).
 - `Household` → joined with its `InviteCode` (8 chars, no 0/O/1/I). `POST /api/household/join` is rate-limited per IP so codes can't be guessed.
 - `Chore` → belongs to the household; any member may edit the list. `WeeklyTarget` is per member per week, null for chores done when needed. Deleting a chore deletes its entries from past weeks too.
 - `ChoreEntry` → one member taking a chore on a `DateOnly`. Planned until `CompletedAt` is set. Several per member and day are allowed. Members see the whole household's entries (`GET /api/entries?weekStart=YYYY-MM-DD`) but create, tick off and delete only their own.

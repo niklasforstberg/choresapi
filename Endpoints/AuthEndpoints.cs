@@ -69,7 +69,7 @@ public static class AuthEndpoints
 
     private static readonly string DummyPasswordHash = BCrypt.Net.BCrypt.HashPassword("password-enumeration-guard");
 
-    private static bool IsPasswordStrong(string password) => password.Length >= 8;
+    internal static bool IsPasswordStrong(string password) => password.Length >= 8;
 
     private static string GenerateJwtToken(User user, IConfiguration config)
     {
