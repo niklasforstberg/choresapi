@@ -48,6 +48,23 @@ public static class UserEndpoints
             return Results.Ok(ToDto(user));
         });
 
+        group.MapPut("/color", async (UpdateColorDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        {
+            var user = await CurrentUser.FindAsync(db, principal);
+            if (user == null)
+                return Results.Unauthorized();
+            if (request.Color != null && !UserColors.All.Contains(request.Color))
+                return Results.BadRequest("Unknown colour.");
+            if (request.Color != null && user.HouseholdId != null &&
+                await db.Users.AnyAsync(u => u.HouseholdId == user.HouseholdId && u.Id != user.Id && u.Color == request.Color))
+                return Results.BadRequest("Someone in the household already has that colour.");
+
+            user.Color = request.Color;
+            await db.SaveChangesAsync();
+
+            return Results.Ok(ToDto(user));
+        });
+
         group.MapPut("/password", async (ChangePasswordDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
         {
             var user = await CurrentUser.FindAsync(db, principal);
@@ -66,5 +83,5 @@ public static class UserEndpoints
     }
 
     private static UserDto ToDto(User user) =>
-        new(user.Id, user.Email, user.Name, user.Role.ToString(), user.HouseholdId);
+        new(user.Id, user.Email, user.Name, user.Role.ToString(), user.HouseholdId, user.Color);
 }

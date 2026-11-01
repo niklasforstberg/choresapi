@@ -1,8 +1,11 @@
 namespace ChoresApi.Models.DTOs.User;
 
-public record UserDto(int Id, string Email, string Name, string Role, int? HouseholdId);
+public record UserDto(int Id, string Email, string Name, string Role, int? HouseholdId, string? Color);
 
 // CurrentPassword is only checked when the email changes.
 public record UpdateProfileDto(string Name, string Email, string? CurrentPassword);
 
 public record ChangePasswordDto(string CurrentPassword, string NewPassword);
+
+// Null goes back to whichever colour is free.
+public record UpdateColorDto(string? Color);

@@ -59,6 +59,9 @@ public static class HouseholdEndpoints
             if (household == null)
                 return Results.BadRequest("No household has that code.");
 
+            // Colours are unique in a household; a taken one gives way to a free one.
+            if (household.Members.Any(m => m.Color == user.Color))
+                user.Color = null;
             household.Members.Add(user);
             await db.SaveChangesAsync();
 
@@ -72,7 +75,7 @@ public static class HouseholdEndpoints
         household.InviteCode,
         household.Members
             .OrderBy(m => m.Name)
-            .Select(m => new HouseholdMemberDto(m.Id, m.Name))
+            .Select(m => new HouseholdMemberDto(m.Id, m.Name, m.Color))
             .ToList());
 
     // No 0/O or 1/I, so the code survives being read aloud or written on a note.

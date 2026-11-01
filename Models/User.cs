@@ -8,6 +8,7 @@ public class User
     public required string Email { get; set; }
     public required string PasswordHash { get; set; }
     public required string Name { get; set; } // its first letter marks the user's entries in the week grid
+    public string? Color { get; set; } // one of UserColors.All, unique in the household; null picks a free one
     public UserRole Role { get; set; } = UserRole.User;
     public DateTime CreatedAt { get; set; }
     public DateTime? LastSeenAt { get; set; } // last successful login; failed ones only go to the Security log

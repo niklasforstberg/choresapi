@@ -18,6 +18,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.Email).HasMaxLength(256);
             entity.Property(u => u.Name).HasMaxLength(100);
+            entity.Property(u => u.Color).HasMaxLength(16);
             entity.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
             entity.HasOne(u => u.Household)
                 .WithMany(h => h.Members)
