@@ -37,7 +37,9 @@ Run choresweb's `npm run dev` alongside; its Vite server proxies `/api` to port 
 - `User` → own login; `Name` is required because its first letter marks their entries. `PUT /api/users/me` changes name and email (an email change needs the current password, as the email is the login); `PUT /api/users/me/password` changes the password. Belongs to at most one `Household` (`HouseholdId` null until they create or join one).
 - `Household` → joined with its `InviteCode` (8 chars, no 0/O/1/I). `POST /api/household/join` is rate-limited per IP so codes can't be guessed.
 - `Chore` → belongs to the household; any member may edit the list. `WeeklyTarget` is per member per week, null for chores done when needed. Deleting a chore deletes its entries from past weeks too.
-- `ChoreEntry` → one member taking a chore on a `DateOnly`. Planned until `CompletedAt` is set. Several per member and day are allowed. Members see the whole household's entries (`GET /api/entries?weekStart=YYYY-MM-DD`) but create, tick off and delete only their own.
+- `ChoreClaim` → one member taking a chore on a `DateOnly`, today or later. `POST /api/claims/{id}/complete` turns it into a completion on the same day, which can't be done before the day comes.
+- `ChoreCompletion` → a chore a member has done on a `DateOnly`, today or earlier. `POST /api/completions` logs one directly, e.g. on a day that has passed.
+- Several claims and completions per member and day are allowed. Members see the whole household's (`GET /api/claims|completions?from=YYYY-MM-DD&to=YYYY-MM-DD`, both inclusive) but create and delete only their own. "Today" is Swedish time.
 
 **JWT config** is under `Jwt:Key/Issuer/Audience`. The key is Base64-encoded and only set in `appsettings.Development.json` (gitignored) or the server env file.
 

@@ -8,7 +8,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<User> Users => Set<User>();
     public DbSet<Household> Households => Set<Household>();
     public DbSet<Chore> Chores => Set<Chore>();
-    public DbSet<ChoreEntry> ChoreEntries => Set<ChoreEntry>();
+    public DbSet<ChoreClaim> ChoreClaims => Set<ChoreClaim>();
+    public DbSet<ChoreCompletion> ChoreCompletions => Set<ChoreCompletion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,12 +42,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<ChoreEntry>(entity =>
+        modelBuilder.Entity<ChoreClaim>(entity =>
         {
             entity.HasIndex(e => new { e.ChoreId, e.Date });
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.HasOne(e => e.Chore)
-                .WithMany(c => c.Entries)
+                .WithMany(c => c.Claims)
+                .HasForeignKey(e => e.ChoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChoreCompletion>(entity =>
+        {
+            entity.HasIndex(e => new { e.ChoreId, e.Date });
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.HasOne(e => e.Chore)
+                .WithMany(c => c.Completions)
                 .HasForeignKey(e => e.ChoreId)
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.User)

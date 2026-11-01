@@ -15,5 +15,6 @@ public class Chore
 
     public int SortOrder { get; set; }
 
-    public ICollection<ChoreEntry> Entries { get; set; } = [];
+    public ICollection<ChoreClaim> Claims { get; set; } = [];
+    public ICollection<ChoreCompletion> Completions { get; set; } = [];
 }

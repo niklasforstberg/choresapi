@@ -79,70 +79,115 @@ public static class ChoreEndpoints
             return Results.NoContent();
         });
 
-        // Everyone sees the whole household's week, but plans and ticks off only their own entries.
-        var entries = app.MapGroup("/api/entries").RequireAuthorization();
+        // Everyone sees the whole household's claims and completions, but creates and removes only their own.
+        // A claim takes a chore on today or a day to come; a completion records one done today or earlier.
+        var claims = app.MapGroup("/api/claims").RequireAuthorization();
 
-        entries.MapGet("/", async (DateOnly weekStart, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        claims.MapGet("/", async (DateOnly from, DateOnly to, ApplicationDbContext db, ClaimsPrincipal principal) =>
         {
             var householdId = await CurrentUser.HouseholdIdAsync(db, principal);
             if (householdId == null)
                 return Results.NotFound();
 
-            var weekEnd = weekStart.AddDays(7);
-            var list = await db.ChoreEntries
-                .Where(e => e.Chore.HouseholdId == householdId && e.Date >= weekStart && e.Date < weekEnd)
-                .OrderBy(e => e.CreatedAt)
-                .Select(e => new ChoreEntryDto(e.Id, e.ChoreId, e.UserId, e.Date, e.CompletedAt != null))
+            var list = await db.ChoreClaims
+                .Where(c => c.Chore.HouseholdId == householdId && c.Date >= from && c.Date <= to)
+                .OrderBy(c => c.CreatedAt)
+                .Select(c => new ChoreDayEntryDto(c.Id, c.ChoreId, c.UserId, c.Date))
                 .ToListAsync();
 
             return Results.Ok(list);
         });
 
-        entries.MapPost("/", async (CreateChoreEntryDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        claims.MapPost("/", async (CreateChoreDayEntryDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
         {
             var user = await CurrentUser.FindAsync(db, principal);
             if (user?.HouseholdId == null)
                 return Results.NotFound();
             if (!await db.Chores.AnyAsync(c => c.Id == request.ChoreId && c.HouseholdId == user.HouseholdId))
                 return Results.NotFound();
+            if (request.Date < Today())
+                return Results.BadRequest("Days that have passed can't be planned.");
 
-            // A day that has passed can't be planned, only logged as done after the fact.
-            var entry = new ChoreEntry
-            {
-                ChoreId = request.ChoreId,
-                UserId = user.Id,
-                Date = request.Date,
-                CompletedAt = request.Date < Today() ? DateTime.UtcNow : null
-            };
-            db.ChoreEntries.Add(entry);
+            var claim = new ChoreClaim { ChoreId = request.ChoreId, UserId = user.Id, Date = request.Date };
+            db.ChoreClaims.Add(claim);
             await db.SaveChangesAsync();
 
-            return Results.Ok(new ChoreEntryDto(entry.Id, entry.ChoreId, entry.UserId, entry.Date, entry.CompletedAt != null));
+            return Results.Ok(new ChoreDayEntryDto(claim.Id, claim.ChoreId, claim.UserId, claim.Date));
         });
 
-        entries.MapPatch("/{id:int}", async (int id, UpdateChoreEntryDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        // Doing a claimed chore turns the claim into a completion on the claimed day.
+        claims.MapPost("/{id:int}/complete", async (int id, ApplicationDbContext db, ClaimsPrincipal principal) =>
         {
             var user = await CurrentUser.FindAsync(db, principal);
-            var entry = await db.ChoreEntries.FirstOrDefaultAsync(e => e.Id == id && e.UserId == user!.Id);
-            if (entry == null)
+            var claim = await db.ChoreClaims.FirstOrDefaultAsync(c => c.Id == id && c.UserId == user!.Id);
+            if (claim == null)
                 return Results.NotFound();
-            if (request.Completed && entry.Date > Today())
+            if (claim.Date > Today())
                 return Results.BadRequest("A chore can't be done ahead of its day.");
 
-            entry.CompletedAt = request.Completed ? entry.CompletedAt ?? DateTime.UtcNow : null;
+            var completion = new ChoreCompletion { ChoreId = claim.ChoreId, UserId = claim.UserId, Date = claim.Date };
+            db.ChoreClaims.Remove(claim);
+            db.ChoreCompletions.Add(completion);
             await db.SaveChangesAsync();
 
-            return Results.Ok(new ChoreEntryDto(entry.Id, entry.ChoreId, entry.UserId, entry.Date, entry.CompletedAt != null));
+            return Results.Ok(new ChoreDayEntryDto(completion.Id, completion.ChoreId, completion.UserId, completion.Date));
         });
 
-        entries.MapDelete("/{id:int}", async (int id, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        claims.MapDelete("/{id:int}", async (int id, ApplicationDbContext db, ClaimsPrincipal principal) =>
         {
             var user = await CurrentUser.FindAsync(db, principal);
-            var entry = await db.ChoreEntries.FirstOrDefaultAsync(e => e.Id == id && e.UserId == user!.Id);
-            if (entry == null)
+            var claim = await db.ChoreClaims.FirstOrDefaultAsync(c => c.Id == id && c.UserId == user!.Id);
+            if (claim == null)
                 return Results.NotFound();
 
-            db.ChoreEntries.Remove(entry);
+            db.ChoreClaims.Remove(claim);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
+
+        var completions = app.MapGroup("/api/completions").RequireAuthorization();
+
+        completions.MapGet("/", async (DateOnly from, DateOnly to, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        {
+            var householdId = await CurrentUser.HouseholdIdAsync(db, principal);
+            if (householdId == null)
+                return Results.NotFound();
+
+            var list = await db.ChoreCompletions
+                .Where(c => c.Chore.HouseholdId == householdId && c.Date >= from && c.Date <= to)
+                .OrderBy(c => c.CreatedAt)
+                .Select(c => new ChoreDayEntryDto(c.Id, c.ChoreId, c.UserId, c.Date))
+                .ToListAsync();
+
+            return Results.Ok(list);
+        });
+
+        // Logs a chore as done without claiming it first, e.g. one forgotten on a day that has passed.
+        completions.MapPost("/", async (CreateChoreDayEntryDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        {
+            var user = await CurrentUser.FindAsync(db, principal);
+            if (user?.HouseholdId == null)
+                return Results.NotFound();
+            if (!await db.Chores.AnyAsync(c => c.Id == request.ChoreId && c.HouseholdId == user.HouseholdId))
+                return Results.NotFound();
+            if (request.Date > Today())
+                return Results.BadRequest("A chore can't be done ahead of its day.");
+
+            var completion = new ChoreCompletion { ChoreId = request.ChoreId, UserId = user.Id, Date = request.Date };
+            db.ChoreCompletions.Add(completion);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new ChoreDayEntryDto(completion.Id, completion.ChoreId, completion.UserId, completion.Date));
+        });
+
+        completions.MapDelete("/{id:int}", async (int id, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        {
+            var user = await CurrentUser.FindAsync(db, principal);
+            var completion = await db.ChoreCompletions.FirstOrDefaultAsync(c => c.Id == id && c.UserId == user!.Id);
+            if (completion == null)
+                return Results.NotFound();
+
+            db.ChoreCompletions.Remove(completion);
             await db.SaveChangesAsync();
             return Results.NoContent();
         });

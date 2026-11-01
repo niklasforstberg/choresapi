@@ -51,7 +51,7 @@ namespace ChoresApi.Migrations
                     b.ToTable("Chores");
                 });
 
-            modelBuilder.Entity("ChoresApi.Models.ChoreEntry", b =>
+            modelBuilder.Entity("ChoresApi.Models.ChoreClaim", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -61,9 +61,6 @@ namespace ChoresApi.Migrations
 
                     b.Property<int>("ChoreId")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -82,7 +79,38 @@ namespace ChoresApi.Migrations
 
                     b.HasIndex("ChoreId", "Date");
 
-                    b.ToTable("ChoreEntries");
+                    b.ToTable("ChoreClaims");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.ChoreCompletion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChoreId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ChoreId", "Date");
+
+                    b.ToTable("ChoreCompletions");
                 });
 
             modelBuilder.Entity("ChoresApi.Models.Household", b =>
@@ -173,10 +201,29 @@ namespace ChoresApi.Migrations
                     b.Navigation("Household");
                 });
 
-            modelBuilder.Entity("ChoresApi.Models.ChoreEntry", b =>
+            modelBuilder.Entity("ChoresApi.Models.ChoreClaim", b =>
                 {
                     b.HasOne("ChoresApi.Models.Chore", "Chore")
-                        .WithMany("Entries")
+                        .WithMany("Claims")
+                        .HasForeignKey("ChoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ChoresApi.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chore");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.ChoreCompletion", b =>
+                {
+                    b.HasOne("ChoresApi.Models.Chore", "Chore")
+                        .WithMany("Completions")
                         .HasForeignKey("ChoreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -204,7 +251,9 @@ namespace ChoresApi.Migrations
 
             modelBuilder.Entity("ChoresApi.Models.Chore", b =>
                 {
-                    b.Navigation("Entries");
+                    b.Navigation("Claims");
+
+                    b.Navigation("Completions");
                 });
 
             modelBuilder.Entity("ChoresApi.Models.Household", b =>
