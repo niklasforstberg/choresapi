@@ -112,7 +112,7 @@ public static class AuthEndpoints
         return token;
     }
 
-    private static string HashRefreshToken(string token) =>
+    internal static string HashRefreshToken(string token) =>
         Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token)));
 
     private static string Base64UrlEncode(byte[] bytes) =>

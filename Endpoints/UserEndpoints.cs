@@ -78,6 +78,11 @@ public static class UserEndpoints
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             await db.SaveChangesAsync();
 
+            // A new password logs out every other device, in case the old one leaked. Their JWTs still
+            // run out within a day.
+            var keep = request.RefreshToken == null ? null : AuthEndpoints.HashRefreshToken(request.RefreshToken);
+            await db.RefreshTokens.Where(t => t.UserId == user.Id && t.TokenHash != keep).ExecuteDeleteAsync();
+
             return Results.NoContent();
         }).RequireRateLimiting("login");
     }
