@@ -101,7 +101,7 @@ namespace ChoresApi.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
-                    b.Property<int>("RecordedById")
+                    b.Property<int?>("RecordedById")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
@@ -274,8 +274,7 @@ namespace ChoresApi.Migrations
                     b.HasOne("ChoresApi.Models.User", "RecordedBy")
                         .WithMany()
                         .HasForeignKey("RecordedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("ChoresApi.Models.User", "User")
                         .WithMany()

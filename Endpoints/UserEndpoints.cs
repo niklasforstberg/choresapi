@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ChoresApi.Data;
 using ChoresApi.Models;
@@ -47,6 +48,28 @@ public static class UserEndpoints
 
             return Results.Ok(ToDto(user));
         });
+
+        // Erases the account: its claims, completions and refresh tokens go with it, completions it recorded
+        // for others lose their recorder, and a household left without members is deleted with its chores.
+        group.MapDelete("/", async ([FromBody] DeleteAccountDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
+        {
+            var user = await CurrentUser.FindAsync(db, principal);
+            if (user == null)
+                return Results.Unauthorized();
+            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                return Results.BadRequest("Incorrect password.");
+
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            var householdId = user.HouseholdId;
+            db.Users.Remove(user);
+            await db.SaveChangesAsync();
+
+            if (householdId != null && !await db.Users.AnyAsync(u => u.HouseholdId == householdId))
+                await db.Households.Where(h => h.Id == householdId).ExecuteDeleteAsync();
+
+            await transaction.CommitAsync();
+            return Results.NoContent();
+        }).RequireRateLimiting("login");
 
         group.MapPut("/color", async (UpdateColorDto request, ApplicationDbContext db, ClaimsPrincipal principal) =>
         {

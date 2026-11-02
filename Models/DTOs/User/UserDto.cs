@@ -8,5 +8,7 @@ public record UpdateProfileDto(string Name, string Email, string? CurrentPasswor
 // RefreshToken is the caller's own, if it has one: it stays valid while every other one is deleted.
 public record ChangePasswordDto(string CurrentPassword, string NewPassword, string? RefreshToken = null);
 
+public record DeleteAccountDto(string Password);
+
 // Null goes back to whichever colour is free.
 public record UpdateColorDto(string? Color);
