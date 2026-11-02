@@ -149,6 +149,40 @@ namespace ChoresApi.Migrations
                     b.ToTable("Households");
                 });
 
+            modelBuilder.Entity("ChoresApi.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("ChoresApi.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -252,6 +286,17 @@ namespace ChoresApi.Migrations
                     b.Navigation("Chore");
 
                     b.Navigation("RecordedBy");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ChoresApi.Models.RefreshToken", b =>
+                {
+                    b.HasOne("ChoresApi.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ChoresApi.Data;
@@ -37,7 +38,8 @@ public static class AuthEndpoints
             user.LastSeenAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
 
-            return Results.Ok(new TokenResponse(GenerateJwtToken(user, config)));
+            var refreshToken = request.RefreshToken ? await IssueRefreshTokenAsync(db, user) : null;
+            return Results.Ok(new TokenResponse(GenerateJwtToken(user, config), refreshToken));
         }).RequireRateLimiting("login");
 
         // No email verification yet: registering logs the user straight in.
@@ -63,9 +65,58 @@ public static class AuthEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            return Results.Ok(new TokenResponse(GenerateJwtToken(user, config)));
+            var refreshToken = request.RefreshToken ? await IssueRefreshTokenAsync(db, user) : null;
+            return Results.Ok(new TokenResponse(GenerateJwtToken(user, config), refreshToken));
         }).RequireRateLimiting("register");
+
+        // Swaps a refresh token for a new JWT. The refresh token stays the same and its year starts
+        // over, so an app in use is never logged out.
+        app.MapPost("/api/auth/refresh", async (RefreshDto request, ApplicationDbContext db, IConfiguration config) =>
+        {
+            var hash = HashRefreshToken(request.RefreshToken);
+            var token = await db.RefreshTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.TokenHash == hash && t.ExpiresAt > DateTime.UtcNow);
+            if (token == null)
+                return Results.Unauthorized();
+
+            token.ExpiresAt = DateTime.UtcNow.Add(RefreshTokenLifetime);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new TokenResponse(GenerateJwtToken(token.User, config), request.RefreshToken));
+        });
+
+        // Knowing the refresh token is all it takes to end it, so this needs no JWT.
+        app.MapPost("/api/auth/logout", async (RefreshDto request, ApplicationDbContext db) =>
+        {
+            var hash = HashRefreshToken(request.RefreshToken);
+            await db.RefreshTokens.Where(t => t.TokenHash == hash).ExecuteDeleteAsync();
+            return Results.NoContent();
+        });
     }
+
+    private static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(365);
+
+    private static async Task<string> IssueRefreshTokenAsync(ApplicationDbContext db, User user)
+    {
+        await db.RefreshTokens.Where(t => t.UserId == user.Id && t.ExpiresAt <= DateTime.UtcNow).ExecuteDeleteAsync();
+
+        var token = Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+        db.RefreshTokens.Add(new RefreshToken
+        {
+            UserId = user.Id,
+            TokenHash = HashRefreshToken(token),
+            ExpiresAt = DateTime.UtcNow.Add(RefreshTokenLifetime)
+        });
+        await db.SaveChangesAsync();
+        return token;
+    }
+
+    private static string HashRefreshToken(string token) =>
+        Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token)));
+
+    private static string Base64UrlEncode(byte[] bytes) =>
+        Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
     private static readonly string DummyPasswordHash = BCrypt.Net.BCrypt.HashPassword("password-enumeration-guard");
 

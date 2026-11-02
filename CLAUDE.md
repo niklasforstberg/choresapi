@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is Chores
 
-Keeps track of household chores — who did what, when. This repo is the REST API; the React SPA lives in its own repo, `../choresweb`. The structure follows Mynt (`../Mynt`), except that the frontend is a separate project.
+Keeps track of household chores — who did what, when. This repo is the REST API; the React SPA lives in its own repo, `../choresweb`, and the iOS app in `../choresios`. The structure follows Mynt (`../Mynt`), except that the frontend is a separate project.
 
 **The two repos are one project.** A change to an endpoint or DTO here usually needs the matching change in `../choresweb/src/api/` (and the reverse), so read and edit both without being asked.
 
@@ -25,8 +25,9 @@ Run choresweb's `npm run dev` alongside; its Vite server proxies `/api` to port 
 
 **ASP.NET Core 9 minimal APIs** — no controllers. Endpoints are static extension methods in `Endpoints/`, registered in `Program.cs` via `app.Map*Endpoints()`.
 
-- Endpoints under `/api/*` require JWT Bearer auth, except `/api/auth/login` and `/api/auth/register` (both rate-limited per client IP). The user ID is read from `ClaimTypes.NameIdentifier`.
+- Endpoints under `/api/*` require JWT Bearer auth, except `/api/auth/login`, `/api/auth/register` (both rate-limited per client IP), `/api/auth/refresh` and `/api/auth/logout`. The user ID is read from `ClaimTypes.NameIdentifier`.
 - Registration logs the user straight in — there is no email verification yet.
+- The JWT lasts a day. The iOS app (`../choresios`) stays logged in with a refresh token: it sends `refreshToken: true` to login/register, keeps the token in the Keychain and swaps it for a new JWT at `POST /api/auth/refresh`. The token is stored hashed (`RefreshToken`), lasts a year from its last use, and `POST /api/auth/logout` deletes it. The web app doesn't ask for one.
 - `ApplicationDbContext` (EF Core, PostgreSQL via Npgsql) is the single database context; relationships and indexes go in `OnModelCreating`. Migrations are applied automatically on startup (`db.Database.Migrate()`).
 - DTOs live in `Models/DTOs/<domain>/`.
 - No CORS: in development the Vite proxy makes requests same-origin, and in production Caddy serves both projects from one host.

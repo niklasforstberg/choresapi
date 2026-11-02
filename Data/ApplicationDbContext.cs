@@ -10,6 +10,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Chore> Chores => Set<Chore>();
     public DbSet<ChoreClaim> ChoreClaims => Set<ChoreClaim>();
     public DbSet<ChoreCompletion> ChoreCompletions => Set<ChoreCompletion>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,6 +74,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(e => e.RecordedById)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(t => t.TokenHash).IsUnique();
+            entity.Property(t => t.TokenHash).HasMaxLength(64);
+            entity.Property(t => t.CreatedAt).HasDefaultValueSql("now()");
+            entity.HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
